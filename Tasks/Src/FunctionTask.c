@@ -14,8 +14,8 @@
 #define GATE_CLOSE	0
 #define GATE_OPEN 	1
 #define STIR_STEP_ANGLE 45
-#define	LONG_CD		250
-#define	SHORT_CD	80
+#define	LONG_CD		200
+#define	SHORT_CD	50
 
 #define FRIC_ON() \
 {\
@@ -510,7 +510,7 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 		{
 			aim_mode = 0;
 		}
-			
+		
 		if(LastState != WorkState)
 		{
 			ChassisTwistState = 0;
@@ -771,7 +771,7 @@ void ShootOneBullet(void)
 	#ifndef USE_HEAT_LIMIT
 	STIR.TargetAngle -= STIR_STEP_ANGLE;
 	#else
-	cdflag0 = (/*JUDGE_State == ONLINE && */fakeHeat0 > (maxHeat0 - realBulletSpeed0) && !burst) ? 1 : 0;
+	cdflag0 = (fakeHeat0 > (maxHeat0 - realBulletSpeed0) && !burst) ? 1 : 0;
 	if(!cdflag0 && ShootState)
 	{
 		STIR.TargetAngle -= 45;

@@ -21,31 +21,31 @@
 #define K_YAW				(1.5f)
 //角度补偿
 #ifdef INFANTRY_3
-	#define YAW_ADJUST												(0.0f)
-	#define PITCH_ADJUST_CONST_SLOW_NORMAL		(5.5f)
-	#define PITCH_ADJUST_COEF_SLOW_NORMAL			(0)
-	#define PITCH_ADJUST_CONST_SLOW_CLOSE			(1.5f)
+	#define YAW_ADJUST												(0.5f)
+	#define PITCH_ADJUST_CONST_SLOW_NORMAL		(0.5f)
+	#define PITCH_ADJUST_COEF_SLOW_NORMAL			(0.02f)
+	#define PITCH_ADJUST_CONST_SLOW_CLOSE			(2.5f)
 	#define PITCH_ADJUST_COEF_SLOW_CLOSE			(0)
 	#define PITCH_ADJUST_CONST_SLOW_UP				(-0.5f)
-	#define PITCH_ADJUST_COEF_SLOW_UP					(0.02f)
+	#define PITCH_ADJUST_COEF_SLOW_UP					(0.025f)
 	#define PITCH_ADJUST_CONST_FAST_NORMAL		(5.5f)
 	#define PITCH_ADJUST_COEF_FAST_NORMAL			(0)
 	#define PITCH_ADJUST_CONST_FAST_CLOSE			(1.5f)
 	#define PITCH_ADJUST_COEF_FAST_CLOSE			(0)
-	#define PITCH_ADJUST_CONST_FAST_UP				(2.5f)
-	#define PITCH_ADJUST_COEF_FAST_UP					(0)
+	#define PITCH_ADJUST_CONST_FAST_UP				(-1.1f)
+	#define PITCH_ADJUST_COEF_FAST_UP					(0.014)
 #endif
 //预测参数
 #ifdef INFANTRY_3
-	#define PREDICT_STEPS											(14)
-	#define PREDICT_SHOOTABLE_BOUND_BELOW			(0.4f)
+	#define PREDICT_STEPS											(13.5)
+	#define PREDICT_SHOOTABLE_BOUND_BELOW			(0.6f)
 	#define PREDICT_SHOOTABLE_BOUND_ABOVE			(0.6f)
 #endif
 //反陀螺参数
 #define ANTI_GYRO_THRES											(6.0f)
 #define ANTI_GYRO_SHOOTABLE_BOUND						(10)
 #ifdef INFANTRY_3
-	#define SHOOT_DELAY												(70)
+	#define SHOOT_DELAY												(20)
 #endif
 #define SHOOT_DELAY_TIME										(shoot_delay+enemy_dist*10.0f/realBulletSpeed0)
 //自瞄pid
@@ -62,7 +62,7 @@
 	#define AUTOAIM_PITCH_PID_DEFAULT \
 	{\
 		0,0,{0,0},\
-		1.0f,0.05f,0.0f,\
+		1.0f,0.05f,0.2f,\
 		0,0,0,\
 		10,8,3,\
 		0,10,0,0,0,\

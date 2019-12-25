@@ -229,7 +229,7 @@ void ControlGMP(MotorINFO* id)
 	}
 
 	#ifdef INFANTRY_3
-		MINMAX(id->TargetAngle, id->RealAngle + (GM_PITCH_ZERO - id->RxMsgC6x0.angle) * 360.0 / 8192.0 / id->ReductionRate - 20.0f, id->RealAngle + (GM_PITCH_ZERO - id->RxMsgC6x0.angle) * 360.0 / 8192.0 / id->ReductionRate + 40.0f);
+		MINMAX(id->TargetAngle, id->RealAngle + (GM_PITCH_ZERO - id->RxMsgC6x0.angle) * 360.0 / 8192.0 / id->ReductionRate - 30.0f, id->RealAngle + (GM_PITCH_ZERO - id->RxMsgC6x0.angle) * 360.0 / 8192.0 / id->ReductionRate + 42.0f);
 	#endif
 	
 	if(GMPReseted==0) id->positionPID.outputMax = 1.0;
