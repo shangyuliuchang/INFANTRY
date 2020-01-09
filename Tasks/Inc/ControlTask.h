@@ -95,6 +95,19 @@ typedef struct {
 	auto_counter=time;\
 }
 
+#define freq_div(func, times)\
+{\
+	static uint16_t cnt = 0;\
+	if(cnt == 0)\
+	{\
+		func;\
+	}\
+	if(cnt++ >= times)\
+	{\
+		cnt = 0;\
+	}\
+}
+
 typedef enum
 {
 	STOP_STATE=-1,
@@ -106,6 +119,7 @@ typedef enum
 
 extern WorkState_e WorkState;
 extern WorkState_e RxWorkState;
+extern uint16_t IWDG_counter;
 void WorkStateFSM(void);
 
 #endif /*__ CONTROLTASK_H */

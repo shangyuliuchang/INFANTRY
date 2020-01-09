@@ -47,7 +47,7 @@
 #ifdef INFANTRY_3
 	#define SHOOT_DELAY												(20)
 #endif
-#define SHOOT_DELAY_TIME										(shoot_delay+enemy_dist*10.0f/realBulletSpeed0)
+#define SHOOT_DELAY_TIME										(shoot_delay+enemy_dist*10.0f/BulletSpeed)
 //×ÔÃépid
 #ifdef INFANTRY_3
 	#define AUTOAIM_YAW_PREDICT_PID_DEFAULT \
@@ -119,7 +119,6 @@ void AutoAimUartRxCpltCallback()
 		aim_finish = 0;
 		receive_cnt++;
 	}
-	
 	if(HAL_UART_Receive_DMA(&AUTOAIM_UART,(uint8_t *)&Enemy_INFO,8)!= HAL_OK)
 	{
 		Error_Handler();
@@ -127,7 +126,7 @@ void AutoAimUartRxCpltCallback()
 }
 
 //¿¨¶ûÂüÂË²¨
-////Called in 
+//Called in AutoAimDataProcess()
 float P = 2.7f;
 float Q = 1.0f;
 float R = 10.0f;
@@ -216,7 +215,7 @@ float window;
 void AutoAimDataProcess()
 {
 	//pitch½Ç¶È²¹³¥¼ÆËã
-	if(realBulletSpeed0 < 20)
+	if(BulletSpeed < 20)
 	{
 		pit_const = PITCH_ADJUST_CONST_SLOW_NORMAL;
 		pit_coef = PITCH_ADJUST_COEF_SLOW_NORMAL;
@@ -342,22 +341,18 @@ void AutoAimControl()
 //Called in AutoAim()
 void AutoAimUartTxInfo()
 {
-	static int send_cnt = 0;
-	send_cnt++;
-	
 	uint8_t data[5];
 	int16_t imu_yaw_tmp = (int16_t)(imu.yaw / k_angle);
 	
-	data[0] = ((GameRobotState.robot_id >= 9) ? 1 : 0);
+	data[0] = ((RefereeData.GameRobotState.robot_id >= 9) ? 1 : 0);
 	data[1] = (uint8_t)((imu_yaw_tmp >> 8) & 0xff);
 	data[2] = (uint8_t)((imu_yaw_tmp) & 0xff);
 	data[3] = 0;
 	data[4] = '\n';
 	
-	if(send_cnt >= 200)
+	//if(tx_free)
 	{
-		HAL_UART_Transmit_DMA(&AUTOAIM_UART, (uint8_t*)&data, sizeof(data));
-		send_cnt = 0;
+		freq_div(HAL_UART_Transmit_DMA(&AUTOAIM_UART, (uint8_t*)&data, sizeof(data)),5);
 	}
 }
 
@@ -458,7 +453,7 @@ void AutoShoot(uint8_t mode)
 	{
 		if(find_enemy && auto_shoot_flag == 1)
 		{
-			ShootOneBullet();
+			ShootOneBullet(BULLET_TYPE);
 		}
 	}
 }

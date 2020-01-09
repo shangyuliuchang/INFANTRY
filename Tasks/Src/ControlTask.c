@@ -15,7 +15,17 @@ WorkState_e WorkState = PREPARE_STATE;
 WorkState_e RxWorkState = PREPARE_STATE;
 uint16_t prepare_time = 0;
 uint16_t counter = 0;
+uint8_t	no_signal = 0;
+uint16_t IWDG_counter = 0;
 double rotate_speed = 0;
+PID_Regulator_t CMRotatePID = 
+{
+	0,0,{0,0},0.3f,0.0f,2.5f,
+	0,0,0,100,100,100,
+	0,50,0,0,0,\
+	&PID_Calc,&PID_Reset,\
+};
+
 MusicNote SuperMario[] = {
 	{H3, 100}, {0, 50}, 
 	{H3, 250}, {0, 50}, 
@@ -30,8 +40,6 @@ MusicNote SuperMario[] = {
 	{H1, 250}, {0, 50}
 };
 
-PID_Regulator_t CMRotatePID = CHASSIS_MOTOR_ROTATE_PID_DEFAULT; 
-
 void playMusicSuperMario(void){
 	HAL_TIM_PWM_Start(&BUZZER_TIM, TIM_CHANNEL_1);
 	for(int i = 0; i < sizeof(SuperMario) / sizeof(MusicNote); i++){
@@ -40,22 +48,42 @@ void playMusicSuperMario(void){
 	HAL_TIM_PWM_Stop(&BUZZER_TIM, TIM_CHANNEL_1);
 }
 
+void IWDG_Handler(void)
+{
+	#ifdef BOARD_SLAVE
+		HAL_IWDG_Refresh(&hiwdg);
+	#endif
+	
+	if(IWDG_counter < 1000)
+		IWDG_counter++;
+	if(IWDG_counter > 100)
+	{
+		no_signal = 1;
+		WorkState = STOP_STATE;
+		inputmode = STOP;
+	}
+	if(IWDG_counter < 500)
+	{
+		HAL_IWDG_Refresh(&hiwdg);
+	}
+}
+
 //状态机切换
 void WorkStateFSM(void)
 {
-	#ifndef SUB_BOARD
+	#ifndef BOARD_SLAVE
 	switch (WorkState)
 	{
 		case PREPARE_STATE:				//准备模式
 		{
 			//if (inputmode == STOP) WorkState = STOP_STATE;
-			if(prepare_time < 500) prepare_time++;	
+			if(prepare_time < 500) prepare_time++;
 			if(prepare_time >= 500 && imu.InitFinish == 1 && isCan11FirstRx == 1 && isCan12FirstRx == 1 && isCan21FirstRx == 1 && isCan22FirstRx == 1)//imu初始化完成且所有can电机上电完成后进入正常模式
 			{
 				//playMusicSuperMario();
 				CMRotatePID.Reset(&CMRotatePID);
 				WorkState = NORMAL_STATE;
-				#ifdef SUB_BOARD
+				#ifdef BOARD_SLAVE
 				WorkState = RxWorkState;
 				#endif
 				prepare_time = 0;
@@ -67,6 +95,7 @@ void WorkStateFSM(void)
 					InitMotor(can2[i]);
 				}
 			}
+			FunctionTaskInit();
 			#ifdef CAN11
 			setCAN11();
 			#endif
@@ -79,7 +108,6 @@ void WorkStateFSM(void)
 			#ifdef CAN22
 			setCAN22();
 			#endif
-			FunctionTaskInit();
 		}break;
 		case NORMAL_STATE:				//正常模式
 		{
@@ -149,23 +177,11 @@ void WorkStateFSM(void)
 	WorkState = RxWorkState;
 	#endif
 }
+
 void ControlRotate(void)
 {	
 	#ifdef USE_CHASSIS_FOLLOW
-		switch (ChassisTwistState)
-		{
-			case 1: 
-			{
-				ChassisSpeedRef.rotate_ref = 50;
-				break;
-			}
-			case 2: 
-			{
-				ChassisSpeedRef.rotate_ref = -50;
-				break;
-			}
-			default: ChassisSpeedRef.rotate_ref = (GMY.RxMsgC6x0.angle - chassis_follow_center) * 360 / 8192.0f - ChassisTwistGapAngle; break;
-		}
+		ChassisTwist();
 		NORMALIZE_ANGLE180(ChassisSpeedRef.rotate_ref);
 	#endif
 	CMRotatePID.ref = 0;
@@ -183,24 +199,6 @@ void Chassis_Data_Decoding()
 		
 		float cosPlusSin, cosMinusSin, GMYEncoderAngle;
 
-//		if(ChassisTwistState == 0)
-//		{
-//			GMYEncoderAngle = (GMY.RxMsgC6x0.angle - GM_YAW_ZERO) * 6.28f / 8192.0f;
-//		}
-//		else
-//		{
-//			//有功率限制情况下调整陀螺走直线
-//			if(Cap_Get_Cap_State() != CAP_STATE_RELEASE)
-//			{
-//				GMYEncoderAngle = (GMY.RxMsgC6x0.angle - GM_YAW_ZERO) * 6.28f / 8192.0f - ChassisSpeedRef.rotate_ref / 57.3f / 3.0f;
-//			}
-//			else
-//			{
-//				GMYEncoderAngle = (GMY.RxMsgC6x0.angle - GM_YAW_ZERO) * 6.28f / 8192.0f;
-//			}
-//			ChassisSpeedRef.forward_back_ref /= 1.1f;
-//			ChassisSpeedRef.left_right_ref /= 1.1f;
-//		}
 		GMYEncoderAngle = (GMY.RxMsgC6x0.angle - GM_YAW_ZERO) * 6.28f / 8192.0f;
 		
 		cosPlusSin = cos(GMYEncoderAngle) + sin(GMYEncoderAngle);
@@ -227,17 +225,34 @@ void Chassis_Data_Decoding()
 	}
 }
 
+int delay_t = 60;
 //主控制循环
 void controlLoop()
 {
-	getJudgeState();
 	WorkStateFSM();
+	//裁判系统
+	getJudgeState();
+	fakeHeatCalc();
+	Refresh_Client_Data();
+	//板间can通信
 	#ifdef DOUBLE_BOARD_CAN1
 	CANTxInfo(&hcan1);
 	#endif
 	#ifdef DOUBLE_BOARD_CAN2
 	CANTxInfo(&hcan2);
 	#endif
+	//imu解算
+	#ifndef BOARD_SLAVE
+		mpu_get_data();
+		imu_ahrs_update();
+		imu_attitude_update();
+	#endif
+	//超级电容
+	freq_div(Cap_Run(),2)
+	//自瞄
+	GM_RealAngle_RCD = GM_RealAngle_Rcd(&GMY, &GMP, delay_t);
+	imu_w_RCD = imu_w_rcd(&imu, delay_t);
+	AutoAim();
 	
 	if(WorkState > 0)
 	{
@@ -245,12 +260,9 @@ void controlLoop()
 		
 		for(int i=0;i<8;i++) if(can1[i]!=0) (can1[i]->Handle)(can1[i]);
 		for(int i=0;i<8;i++) if(can2[i]!=0) (can2[i]->Handle)(can2[i]);
-		#ifdef USE_CHASSIS_ADJUST
-		if(CAP_STATE_RELEASE){chassisMixingPID(12,0,2, 4,0.01,0);}
-		else{chassisMixingPID(12,0,2, 3,0.4,0);}
-		#endif
+		//Todo:底盘跟随pid
 		
-		OptionalFunction();
+		PowerLimitation();
 
 		#ifdef CAN11
 		setCAN11();
@@ -267,49 +279,14 @@ void controlLoop()
 	}
 }
 
-void heatCalc()//1ms
-{
-	if(fakeHeat0 >= cooldown0/1000) fakeHeat0 -= cooldown0/1000;
-	else fakeHeat0 = 0;
-	if(fakeHeat1 >= cooldown1/1000) fakeHeat1 -= cooldown1/1000;
-	else fakeHeat1 = 0;
-}
-
-int delay_t = 60;
 //时间中断入口函数
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if (htim->Instance == htim6.Instance)//1ms时钟`
 	{
 		HAL_NVIC_DisableIRQ(TIM6_DAC_IRQn);
-		#ifndef SUB_BOARD
-			//imu解算
-			mpu_get_data();
-			imu_ahrs_update();
-			imu_attitude_update();
-		#endif
-		//主循环在时间中断中启动
+		//主循环
 		controlLoop();
-		heatCalc();
-		static uint8_t cap_time_cnt = 0;
-		cap_time_cnt += 1;
-		if (cap_time_cnt >= 2){
-		   Cap_Run();
-		   cap_time_cnt = 0;
-		}
-		
-		#ifndef SUB_BOARD
-		//自瞄数据解算（5ms）
-		static int aim_cnt=0;
-		aim_cnt++;
-		GM_RealAngle_RCD = GM_RealAngle_Rcd(&GMY, &GMP, delay_t);
-		imu_w_RCD = imu_w_rcd(&imu, delay_t);
-		if(aim_cnt >= 5)
-		{
-			AutoAim();
-			aim_cnt=0;
-		}
-		#endif
 		
 		HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
 	}
@@ -323,8 +300,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		if(auto_counter_heat1 > 0) auto_counter_heat1--;
 		if(shoot_cd > 0) shoot_cd--;
 		
-		#ifndef SUB_BOARD
-		if (rx_free == 1 && tx_free == 1)
+		//看门狗处理
+		IWDG_Handler();
+		if (rx_free == 1)
 		{
 			if( (rc_cnt <= 17) && (rc_first_frame == 1))
 			{
@@ -332,14 +310,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				HAL_UART_AbortReceive(&RC_UART);
 				rx_free = 0;
 				while(HAL_UART_Receive_DMA(&RC_UART, rc_data, 18)!= HAL_OK);
-				if (counter == 10) 
+				if(counter >= 5) 
 				{
-					tx_free = 0;
 					Referee_Transmit_UserData();
 					counter = 0;
 				}
-				else counter++;				
-					rc_cnt = 0;
+				else counter++;	
+				rc_cnt = 0;
 			}
 			else
 			{
@@ -354,8 +331,5 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			}
 			rc_update = 0;
 		}
-		#else
-		HAL_IWDG_Refresh(&hiwdg);
-		#endif
 	}
 }

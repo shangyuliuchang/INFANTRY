@@ -19,41 +19,10 @@
 #ifdef INFANTRY_3
 #define GM_PITCH_GRAVITY_COMPENSATION 0
 #define GM_PITCH_ZERO 	0
-#define GM_YAW_ZERO 	4100
+#define GM_YAW_ZERO 		4100
 #endif
 
-#define CHASSIS_SPEED_ATTENUATION   (1.30f)
 #define NORMALIZE_ANGLE180(angle) angle = ((angle) > 180) ? ((angle) - 360) : (((angle) < -180) ? (angle) + 360 : angle)
-
-#define CHASSIS_MOTOR_ROTATE_PID_DEFAULT \
-{\
-	0,0,{0,0},\
-	0.3f,0.0f,2.5f,/*p i d*/\
-	0,0,0,\
-	100,100,100,\
-	0,50,0,0,0,\
-	&PID_Calc,&PID_Reset,\
-}
-
-#define CHASSIS_MOTOR_SPEED_PID_DEFAULT \
-{\
-	0,0,{0,0},\
-	16.0f,0.0f,2.0f,\
-	0,0,0,\
-	20000,20000,20000,\
-	0,16384,0,0,0,\
-	&PID_Calc,&PID_Reset,\
-}
-
-#define FRIC_MOTOR_SPEED_PID_DEFAULT \
-{\
-	0,0,{0,0},\
-	30.0f,0.0f,5.0f,\
-	0,0,0,\
-	15000,15000,15000,\
-	0,10000,0,0,0,\
-	&PID_Calc,&PID_Reset,\
-}
 
 #define FW_PID_DEFAULT \
 { \
@@ -91,39 +60,15 @@ typedef struct MotorINFO
 	int16_t				Intensity;
 }MotorINFO;
 
-#define Normal_MOTORINFO_Init(rdc,func,ppid,spid)\
-{\
-	ESC_C6x0,0,0,0,rdc,\
-	{0,0,0},{0,0,0},0,0,1,0,0,func,\
-	ppid,spid,CHASSIS_MOTOR_SPEED_PID_DEFAULT,0 \
-}
-
-#define Chassis_MOTORINFO_Init(func,spid)\
-{\
-	ESC_C6x0,0,0,0,1,\
-	{0,0,0},{0,0,0},0,0,1,0,0,func,\
-	FW_PID_DEFAULT,FW_PID_DEFAULT,spid,0 \
-}
-
-#define Gimbal_MOTORINFO_Init(rdc,func,ppid,spid)\
-{\
-	ESC_C6x0,0,0,0,rdc,\
-	{0,0,0},{0,0,0},0,0,1,0,0,func,\
-	ppid,spid,CHASSIS_MOTOR_SPEED_PID_DEFAULT,0 \
-}
-
-
 extern MotorINFO CMFL,CMFR,CMBL,CMBR,GMY,GMP,FRICL,FRICR,STIR,GATE;
 extern MotorINFO *can1[8],*can2[8];
 extern uint8_t GMYReseted,GMPReseted;
 
 void InitMotor(MotorINFO *id);
 void Motor_ID_Setting(void);
-
 void setCAN11(void);
 void setCAN12(void);
 void setCAN21(void);
 void setCAN22(void);
-float RotateSpeed_Yaw_Kalman_Filter(float input);
 
 #endif /*__ CANMOTOR_H */

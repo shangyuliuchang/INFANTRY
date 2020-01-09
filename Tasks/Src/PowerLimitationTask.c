@@ -13,13 +13,10 @@
 #include "includes.h"
 #include "math.h"
 
-float SpeedAttenuation = 1.0f;
 float LimitFactor = 1.0f;
-uint8_t flag = 1;
-fw_PID_Regulator_t PowerLimitationPID = POWER_LIMITATION_PID_DEFAULT;
 
 //底盘功率限制
-void PowerLimitation(void)
+void No_Cap_PowerLimitation(void)
 {
 	uint16_t sum = 0;
 	int16_t CM_current_max;
@@ -42,9 +39,9 @@ void PowerLimitation(void)
 			CMBRIntensity = (CMBRIntensity/(sum+1.0f))*CM_current_max;
 		}
 	}
-	else if(PowerHeat.chassis_power_buffer-((PowerHeat.chassis_power-105)>0?(PowerHeat.chassis_power-105):0)*0.5f < 50.0f)
+	else if(RefereeData.PowerHeat.chassis_power_buffer-((RefereeData.PowerHeat.chassis_power-cur_robot_status.power_limit+15)>0?(RefereeData.PowerHeat.chassis_power-cur_robot_status.power_limit+15):0)*0.5f < 50.0f)
 	{
-		float realPowerBuffer = PowerHeat.chassis_power_buffer;
+		float realPowerBuffer = RefereeData.PowerHeat.chassis_power_buffer;
 		if(realPowerBuffer < 0) realPowerBuffer = 0;
 		LimitFactor = 2500 + 192*pow((realPowerBuffer),1);
 		if(LimitFactor > sum) LimitFactor = sum;
@@ -121,10 +118,10 @@ void CurBased_PowerLimitation(void)
 	}
 	
 	//仿桂电策略
-	else if((PowerHeat.chassis_power_buffer-((Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-65)>0?(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-65):0)*0.5f < 50.0f))
+	else if((RefereeData.PowerHeat.chassis_power_buffer-((Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-cur_robot_status.power_limit+15)>0?(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-cur_robot_status.power_limit+15):0)*0.5f < 50.0f))
 	{
 		sum = __fabs(CMFLIntensity) + __fabs(CMFRIntensity) + __fabs(CMBLIntensity) + __fabs(CMBRIntensity);
-		float realPowerBuffer = PowerHeat.chassis_power_buffer;
+		float realPowerBuffer = RefereeData.PowerHeat.chassis_power_buffer;
 		if(realPowerBuffer < 0) realPowerBuffer = 0;
 		LimitFactor = 2500 + 192*pow((realPowerBuffer),1);
 		if(LimitFactor > sum) LimitFactor = sum;
@@ -165,10 +162,10 @@ void CapBased_PowerLimitation(void)
 			CMBRIntensity = (CMBRIntensity/(sum+1.0f))*CM_current_max;
 		}
 	}
-	else if( (PowerHeat.chassis_power_buffer-((Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-70)>0?(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-70):0)*1.0f < 50.0f))
+	else if( (RefereeData.PowerHeat.chassis_power_buffer-((Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-cur_robot_status.power_limit+10)>0?(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-cur_robot_status.power_limit+10):0)*1.0f < 50.0f))
 	{
 		sum = __fabs(CMFLIntensity) + __fabs(CMFRIntensity) + __fabs(CMBLIntensity) + __fabs(CMBRIntensity);
-		float realPowerBuffer = PowerHeat.chassis_power_buffer;
+		float realPowerBuffer = RefereeData.PowerHeat.chassis_power_buffer;
 		
 		if(realPowerBuffer < 0) realPowerBuffer = 0;
 		LimitFactor = 2500 + 200*pow((realPowerBuffer),1);
@@ -178,10 +175,10 @@ void CapBased_PowerLimitation(void)
 		CMBLIntensity *= LimitFactor/sum;
 		CMBRIntensity *= LimitFactor/sum;
 	}
-	else if(Cap_Get_Cap_Voltage() < 12.5 && (PowerHeat.chassis_power_buffer-((Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-70)>0?(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-70):0)*1.0f < 20.0f))
+	else if(Cap_Get_Cap_Voltage() < 12.5 && (RefereeData.PowerHeat.chassis_power_buffer-((Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-70)>0?(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-70):0)*1.0f < 20.0f))
 	{
 		sum = __fabs(CMFLIntensity) + __fabs(CMFRIntensity) + __fabs(CMBLIntensity) + __fabs(CMBRIntensity);
-		float realPowerBuffer = PowerHeat.chassis_power_buffer;
+		float realPowerBuffer = RefereeData.PowerHeat.chassis_power_buffer;
 		
 		if(realPowerBuffer < 0) realPowerBuffer = 0;
 		LimitFactor = 2500 + 192*pow((realPowerBuffer),1);
@@ -197,4 +194,23 @@ void CapBased_PowerLimitation(void)
 	CMBL.Intensity = CMBLIntensity;
 	CMBR.Intensity = CMBRIntensity;
 	rlease_flag = 0;
+}
+
+void PowerLimitation(void)
+{
+//	if(Cap_Get_Cap_State() == CAP_STATE_STOP)
+//	{
+//		No_Cap_PowerLimitation(); //基于自测功率的功率限制，适用于充电和停止状态
+//	}
+//	else
+//	{
+//		if (Cap_Get_Cap_State() == CAP_STATE_RECHARGE || Cap_Get_Cap_State() == CAP_STATE_TEMP_RECHARGE)
+//			CurBased_PowerLimitation();//基于自测功率的功率限制，适用于充电和停止状态
+//		else
+//		{
+//			if (Cap_Get_Cap_State() == CAP_STATE_RELEASE)
+//				CapBased_PowerLimitation();//超级电容工作模式下的功率限制
+//		}
+//	}
+	No_Cap_PowerLimitation(); //无电容的功率限制
 }

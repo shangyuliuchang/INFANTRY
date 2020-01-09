@@ -153,77 +153,57 @@
         <Ww>
           <count>0</count>
           <WinNumber>1</WinNumber>
-          <ItemText>imu,0x0A</ItemText>
+          <ItemText>WorkState</ItemText>
         </Ww>
         <Ww>
           <count>1</count>
           <WinNumber>1</WinNumber>
-          <ItemText>imu.ax,0x0A</ItemText>
+          <ItemText>prepare_time,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>2</count>
           <WinNumber>1</WinNumber>
-          <ItemText>imu.ay,0x0A</ItemText>
+          <ItemText>imu.InitFinish</ItemText>
         </Ww>
         <Ww>
           <count>3</count>
           <WinNumber>1</WinNumber>
-          <ItemText>imu.az,0x0A</ItemText>
+          <ItemText>isCan11FirstRx</ItemText>
         </Ww>
         <Ww>
           <count>4</count>
           <WinNumber>1</WinNumber>
-          <ItemText>imu.wz</ItemText>
+          <ItemText>isCan12FirstRx</ItemText>
         </Ww>
         <Ww>
           <count>5</count>
           <WinNumber>1</WinNumber>
-          <ItemText>imu.yaw</ItemText>
+          <ItemText>isCan21FirstRx</ItemText>
         </Ww>
         <Ww>
           <count>6</count>
           <WinNumber>1</WinNumber>
-          <ItemText>GMY,0x0A</ItemText>
+          <ItemText>isCan22FirstRx</ItemText>
         </Ww>
         <Ww>
           <count>7</count>
           <WinNumber>1</WinNumber>
-          <ItemText>GMP,0x0A</ItemText>
+          <ItemText>JUDGE_State</ItemText>
         </Ww>
         <Ww>
           <count>8</count>
           <WinNumber>1</WinNumber>
-          <ItemText>shoot_cd,0x0A</ItemText>
+          <ItemText>STIR,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>9</count>
           <WinNumber>1</WinNumber>
-          <ItemText>fakeHeat0</ItemText>
+          <ItemText>RefereeData,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>10</count>
           <WinNumber>1</WinNumber>
-          <ItemText>realBulletSpeed0</ItemText>
-        </Ww>
-        <Ww>
-          <count>11</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>ShootData</ItemText>
-        </Ww>
-        <Ww>
-          <count>12</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>aim</ItemText>
-        </Ww>
-        <Ww>
-          <count>13</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>enemy_dist</ItemText>
-        </Ww>
-        <Ww>
-          <count>14</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>receive_rcd,0x0A</ItemText>
+          <ItemText>check_buffer</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>
@@ -331,6 +311,16 @@
           <count>20</count>
           <WinNumber>2</WinNumber>
           <ItemText>v_cur</ItemText>
+        </Ww>
+        <Ww>
+          <count>21</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>IWDG_counter,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>22</count>
+          <WinNumber>2</WinNumber>
+          <ItemText>rc_data</ItemText>
         </Ww>
       </WatchWindow2>
       <MemoryWindow4>

@@ -15,7 +15,6 @@ uint8_t rc_data[18];
 RC_Ctl_t RC_CtrlData;
 InputMode_e inputmode = REMOTE_INPUT; 
 FunctionMode_e functionmode = UPPER_POS;
-
 RemoteSwitch_t g_switch1;
 
 
@@ -63,7 +62,8 @@ void GetRemoteSwitchAction(RemoteSwitch_t *sw, uint8_t val)
 //Ò£¿ØÆ÷Êý¾Ý½âËã
 void RemoteDataProcess(uint8_t *pData)
 {
-	HAL_IWDG_Refresh(&hiwdg);
+	IWDG_counter = 0;
+	
 	if(pData == NULL)
 	{
 			return;
@@ -148,15 +148,10 @@ uint8_t  rx_free = 1;
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
-	if(UartHandle == &RC_UART){
+	if(UartHandle == &RC_UART)
+	{
 		rc_update = 1;
 		rx_free = 1;
-	}
-	else if(UartHandle == &GYRO_UART)
-	{
-		#ifdef USE_GYRO
-		gyroUartRxCpltCallback();
-		#endif
 	}
 	else if(UartHandle == &JUDGE_UART)
 	{
@@ -225,7 +220,7 @@ uint16_t ERRORTEST;
 		__HAL_UART_CLEAR_FLAG(UartHandle, UART_FLAG_ORE);
 		UartHandle->gState = HAL_UART_STATE_READY;
 		UartHandle->RxState = HAL_UART_STATE_READY;
-	} 
+	}
 
 	if(UartHandle == &RC_UART)
 	{

@@ -157,7 +157,7 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan){
 		else if(Can1RxMsg.StdId==0x300)
 		{
 			flag=1;
-			#if defined (SUB_BOARD) && defined (DOUBLE_BOARD_CAN1)
+			#if defined (BOARD_SLAVE) && defined (DOUBLE_BOARD_CAN1)
 			switch(Can1RxMsg.Data[0])
 			{
 				case 0xff: RxWorkState=STOP_STATE; break;
@@ -200,7 +200,7 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan){
 		else if(Can1RxMsg.StdId==0x301)
 		{
 			flag = 1;
-			#if defined (MAIN_BOARD) && defined (DOUBLE_BOARD_CAN1)
+			#if defined (BOARD_MAIN) && defined (DOUBLE_BOARD_CAN1)
 			rx_power_voltage = Can1RxMsg.Data[0] / 5;
 			rx_power_current = (double)(Can1RxMsg.Data[1] * 256 + Can1RxMsg.Data[2]) / rx_power_voltage;
 			rx_cap_voltage = Can1RxMsg.Data[3] / 5;
@@ -264,14 +264,14 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan){
 		else if(Can2RxMsg.StdId==0x300)
 		{
 			flag=1;
-			#if defined (SUB_BOARD) && defined (DOUBLE_BOARD_CAN2)
+			#if defined (BOARD_SLAVE) && defined (DOUBLE_BOARD_CAN2)
 			
 			#endif
 		}
 		else if(Can1RxMsg.StdId==0x301)
 		{
 			flag = 1;
-			#if defined (MAIN_BOARD) && defined (DOUBLE_BOARD_CAN2)
+			#if defined (BOARD_MAIN) && defined (DOUBLE_BOARD_CAN2)
 			
 			#endif
 		}
@@ -297,7 +297,7 @@ void CANTxInfo(CAN_HandleTypeDef* hcan)
 	CanTxMsgTypeDef pData;
 	hcan->pTxMsg = &pData;
 	
-	#ifdef MAIN_BOARD
+	#ifdef BOARD_MAIN
 	hcan->pTxMsg->StdId = 0x300;	//标头为0x300，注意检查是否配对及有无冲突情况
 	hcan->pTxMsg->ExtId = 0;
 	hcan->pTxMsg->IDE = CAN_ID_STD;
@@ -322,7 +322,7 @@ void CANTxInfo(CAN_HandleTypeDef* hcan)
 	}
 	
 	if(fabs(CMFL.offical_speedPID.fdb - CMFL.offical_speedPID.ref) > 300 || fabs(CMFR.offical_speedPID.fdb - CMFR.offical_speedPID.ref) > 300 || \
-		fabs(CMBL.offical_speedPID.fdb - CMBL.offical_speedPID.ref) > 300 || fabs(CMBR.offical_speedPID.fdb - CMBR.offical_speedPID.ref) > 300 || PowerHeat.chassis_power_buffer < 59.0f || ChassisTwistState)
+		fabs(CMBL.offical_speedPID.fdb - CMBL.offical_speedPID.ref) > 300 || fabs(CMBR.offical_speedPID.fdb - CMBR.offical_speedPID.ref) > 300 || RefereeData.PowerHeat.chassis_power_buffer < 59.0f || ChassisTwistState)
 	{
 		hcan->pTxMsg->Data[2] = 1;
 	}
@@ -336,7 +336,7 @@ void CANTxInfo(CAN_HandleTypeDef* hcan)
 	hcan->pTxMsg->Data[7] = 0;
 	#endif
 	
-	#ifdef SUB_BOARD
+	#ifdef BOARD_SLAVE
 	hcan->pTxMsg->StdId = 0x301;	//标头为0x301，注意检查是否配对及有无冲突情况
 	hcan->pTxMsg->ExtId = 0;
 	hcan->pTxMsg->IDE = CAN_ID_STD;

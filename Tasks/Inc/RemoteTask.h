@@ -71,8 +71,6 @@ typedef enum
 	LOWER_POS = 3,
 }FunctionMode_e;
 
-
-
 typedef __packed struct
 {
 	 uint8_t switch_value_raw;      	// the current switch value
@@ -85,11 +83,8 @@ typedef __packed struct
 	 uint8_t buf_end_index;
 }RemoteSwitch_t;
 
-
-
 extern InputMode_e inputmode;
 extern FunctionMode_e functionmode;
-
 
 extern uint8_t rc_data[18];
 extern uint8_t rc_first_frame;

@@ -76,7 +76,7 @@
   #define RECHARGE_CURR_MAX       (3.0)
   #define RELEASE_CURR_MAX        (3.0)
   #define RELEASE_POW_RATE        (1.5)//1.3
-  #define RECHARGE_POW_RATE       ((PowerHeat.chassis_power > RECHARGE_POWER_MAX)?\
+  #define RECHARGE_POW_RATE       ((RefereeData.PowerHeat.chassis_power > RECHARGE_POWER_MAX)?\
 	                                ((RECHARGE_VOLTAGE_MAX - VAL__CAP_VOLTAGE) / (RECHARGE_VOLTAGE_MAX - RELEASE_VOLTAGE_MIN) * (1.4-0.8) + 0.8):\
 																	((RECHARGE_VOLTAGE_MAX - VAL__CAP_VOLTAGE) / (RECHARGE_VOLTAGE_MAX - RELEASE_VOLTAGE_MIN) * (1.4-1.0) + 1.0))
   #define INPUT_PWM_PERCENT_MAX   (100)
@@ -106,14 +106,14 @@
 
   #ifdef CAP_USE_CURR
     #define FUNC__RECAL_INPUT_PWM(rate)       FUNC__ADD_INPUT_PWM_PERCENT(rate*CAL_RECHARGE(RECHARGE_POWER_MAX, \
-                                              Cap_Get_Power_Voltage()*Cap_Get_Power_CURR() + (60 - PowerHeat.chassis_power_buffer) / 2));
+                                              Cap_Get_Power_Voltage()*Cap_Get_Power_CURR() + (60 - RefereeData.PowerHeat.chassis_power_buffer) / 2));
     #define FUNC__RECAL_OUTPUT_PWM(rate)      FUNC__ADD_OUTPUT_PWM_PERCENT(-rate*CAL_RELEASE(RELEASE_POWER_MAX, \
-                                              Cap_Get_Power_Voltage()*Cap_Get_Power_CURR() + (60 - PowerHeat.chassis_power_buffer) / 2));
+                                              Cap_Get_Power_Voltage()*Cap_Get_Power_CURR() + (60 - RefereeData.PowerHeat.chassis_power_buffer) / 2));
   #else
     #define FUNC__RECAL_INPUT_PWM(rate)       FUNC__ADD_INPUT_PWM_PERCENT(rate*CAL_RECHARGE(RECHARGE_POWER_MAX, \
-                                              PowerHeat.chassis_power + (60 - PowerHeat.chassis_power_buffer) / 2));
+                                              RefereeData.PowerHeat.chassis_power + (60 - RefereeData.PowerHeat.chassis_power_buffer) / 2));
     #define FUNC__RECAL_OUTPUT_PWM(rate)      FUNC__ADD_OUTPUT_PWM_PERCENT(-rate*CAL_RELEASE(RELEASE_POWER_MAX, \
-                                              PowerHeat.chassis_power + (60 - PowerHeat.chassis_power_buffer) / 2));
+                                              RefereeData.PowerHeat.chassis_power + (60 - RefereeData.PowerHeat.chassis_power_buffer) / 2));
   #endif /* CAP_USE_CURR */
 
   #define CAL_RELEASE(max, x) (((max)>(x))?(pow((max)-(x), RELEASE_POW_RATE)):(-pow((x)-(max), RELEASE_POW_RATE)))
@@ -134,7 +134,7 @@
   #define VAL__CAP_Power_CURR     (FUNC__Get_Voltage(ICIN)  / 0.14)
   #define VAL__CAP_Power_Voltage    (FUNC__Get_Voltage(ICOUT)  * 35.2 / 2.2) //Power Voltage
   double FUNC__Get_Voltage(uint8_t dev);
-  #ifdef SUB_BOARD
+  #ifdef BOARD_SLAVE
     #define FUNC__RECAL_INPUT_DAC        ((70 - VAL__CAP_Power_CURR*VAL__CAP_Power_Voltage)/VAL__CAP_VOLTAGE)*4095*0.02*10/3.3
     #define FUNC__RECAL_INPUT_DAC_T        ((70 - VAL__CAP_Power_CURR*VAL__CAP_Power_Voltage)/VAL__CAP_VOLTAGE)*4095*0.02*10/3.3
 	#else
@@ -326,7 +326,7 @@ void Cap_State_Switch(cap_state State) {
 }
 
 double Cap_Get_Cap_Voltage(void) {
-	#ifndef MAIN_BOARD
+	#ifndef BOARD_MAIN
 	  return VAL__CAP_VOLTAGE;
 	#else
 		return rx_cap_voltage;
@@ -335,7 +335,7 @@ double Cap_Get_Cap_Voltage(void) {
 
 
 double Cap_Get_Power_Voltage(void){
-	#ifndef MAIN_BOARD
+	#ifndef BOARD_MAIN
 		return VAL__CAP_Power_Voltage;
 	#else
 		return rx_power_voltage;
@@ -343,7 +343,7 @@ double Cap_Get_Power_Voltage(void){
 }
 
 double Cap_Get_Power_CURR(void){
-	#ifndef MAIN_BOARD
+	#ifndef BOARD_MAIN
 		return VAL__CAP_Power_CURR;
 	#else
 		return rx_power_current;
@@ -428,7 +428,7 @@ static void Cap_Ctr_STOP() {
 	  if (VAL__CAP_VOLTAGE < RE_RECHARGE_VOLTAGE) {
 		  #ifdef USE_CAP1
 		    if (VAL__CAP_VOLTAGE < RECHARGE_VOLTAGE_MAX  && fabs(CMFL.offical_speedPID.fdb) < 1000 && fabs(CMFR.offical_speedPID.fdb) < 1000 && \
-				  		  fabs(CMBL.offical_speedPID.fdb) < 1000 && fabs(CMBR.offical_speedPID.fdb) < 1000 && PowerHeat.chassis_power_buffer > 59.0f) {
+				  		  fabs(CMBL.offical_speedPID.fdb) < 1000 && fabs(CMBR.offical_speedPID.fdb) < 1000 && RefereeData.PowerHeat.chassis_power_buffer > 59.0f) {
 		        Cap_State_Switch(CAP_STATE_RECHARGE);
 	      }
 		
@@ -448,8 +448,8 @@ static void Cap_Ctr_STOP() {
 	    Control_SuperCap.P_voltage = 100*Cap_Get_Power_Voltage();
 	    Control_SuperCap.P_Power = 100*Cap_Get_Power_Voltage()*Cap_Get_Power_CURR();*/
       if(++cnt >=5 && ncnt < DEBUG_HITS){
-        cps[0][ncnt] = PowerHeat.chassis_power * 100;
-        cps[1][ncnt] = PowerHeat.chassis_power_buffer  * 100;
+        cps[0][ncnt] = RefereeData.PowerHeat.chassis_power * 100;
+        cps[1][ncnt] = RefereeData.PowerHeat.chassis_power_buffer  * 100;
         cps[2][ncnt] = Cap_Get_Power_Voltage()*Cap_Get_Power_CURR()*100;
         cps[3][ncnt++] = VAL__INPUT_PWM_PERCENT * 100;
         cnt = 0;
@@ -468,7 +468,7 @@ static void Cap_Ctr_STOP() {
 static void Cap_Ctr_RECHARGE() {
 	#ifdef USE_CAP1
 	  if (VAL__CAP_VOLTAGE > RECHARGE_VOLTAGE_MAX  || fabs(CMFL.offical_speedPID.fdb) > 1000 || fabs(CMFR.offical_speedPID.fdb) > 1000 || \
-	  					  fabs(CMBL.offical_speedPID.fdb) > 1000 || fabs(CMBR.offical_speedPID.fdb) > 1000 || PowerHeat.chassis_power_buffer < 59.0f) {
+	  					  fabs(CMBL.offical_speedPID.fdb) > 1000 || fabs(CMBR.offical_speedPID.fdb) > 1000 || RefereeData.PowerHeat.chassis_power_buffer < 59.0f) {
 	  	Cap_State_Switch(CAP_STATE_STOP);
 	  }
 	  else 
@@ -488,8 +488,8 @@ static void Cap_Ctr_RECHARGE() {
 	          Control_SuperCap.P_voltage = 100*Cap_Get_Power_Voltage();
 	          Control_SuperCap.P_Power = 100*Cap_Get_Power_Voltage()*Cap_Get_Power_CURR();
             if(++cnt >=5 && ncnt < DEBUG_HITS){
-							cps[0][ncnt] = PowerHeat.chassis_power * 100;
-							cps[1][ncnt] = PowerHeat.chassis_power_buffer  * 100;
+							cps[0][ncnt] = RefereeData.PowerHeat.chassis_power * 100;
+							cps[1][ncnt] = RefereeData.PowerHeat.chassis_power_buffer  * 100;
 							cps[2][ncnt] = Cap_Get_Power_Voltage()*Cap_Get_Power_CURR()*100;
 							cps[3][ncnt++] = VAL__INPUT_PWM_PERCENT * 100;
 							cnt = 0;
@@ -514,9 +514,9 @@ static void Cap_Ctr_RECHARGE() {
   #endif /* USE_CAP2 */
 	
 	#ifdef USE_CAPex
-		#ifndef SUB_BOARD
+		#ifndef BOARD_SLAVE
 		if (VAL__CAP_VOLTAGE > RECHARGE_VOLTAGE_MAX  || fabs(CMFL.offical_speedPID.fdb - CMFL.offical_speedPID.ref) > 300 || fabs(CMFR.offical_speedPID.fdb - CMFR.offical_speedPID.ref) > 300 || \
-					  fabs(CMBL.offical_speedPID.fdb - CMBL.offical_speedPID.ref) > 300 || fabs(CMBR.offical_speedPID.fdb - CMBR.offical_speedPID.ref) > 300 || PowerHeat.chassis_power_buffer < 59.0f ){
+					  fabs(CMBL.offical_speedPID.fdb - CMBL.offical_speedPID.ref) > 300 || fabs(CMBR.offical_speedPID.fdb - CMBR.offical_speedPID.ref) > 300 || RefereeData.PowerHeat.chassis_power_buffer < 59.0f ){
 		        HAL_GPIO_WritePin(Cap_In_GPIO_Port, Cap_In_Pin, GPIO_PIN_RESET);
 		  	}else{
 				    HAL_GPIO_WritePin(Cap_In_GPIO_Port, Cap_In_Pin, GPIO_PIN_SET);
@@ -529,7 +529,7 @@ static void Cap_Ctr_RECHARGE() {
 	  }
 		#endif
 	  
-		#ifndef MAIN_BOARD		
+		#ifndef BOARD_MAIN		
 	  if (Cap_Get_Cap_Voltage() > RECHARGE_VOLTAGE_MAX) {
 		  Cap_State_Switch(CAP_STATE_STOP);
 	  }
@@ -550,9 +550,9 @@ static void Cap_Ctr_RECHARGE() {
 static void Cap_Ctr_TEMP_RECHARGE() {
 	
 	#ifdef USE_CAPex
-	#ifndef SUB_BOARD
+	#ifndef BOARD_SLAVE
 	if (VAL__CAP_VOLTAGE > RECHARGE_VOLTAGE_MAX  || fabs(CMFL.offical_speedPID.fdb - CMFL.offical_speedPID.ref) > 300 || fabs(CMFR.offical_speedPID.fdb - CMFR.offical_speedPID.ref) > 300 || \
-					fabs(CMBL.offical_speedPID.fdb - CMBL.offical_speedPID.ref) > 300 || fabs(CMBR.offical_speedPID.fdb - CMBR.offical_speedPID.ref) > 300 || PowerHeat.chassis_power_buffer < 59.0f ){
+					fabs(CMBL.offical_speedPID.fdb - CMBL.offical_speedPID.ref) > 300 || fabs(CMBR.offical_speedPID.fdb - CMBR.offical_speedPID.ref) > 300 || RefereeData.PowerHeat.chassis_power_buffer < 59.0f ){
 					HAL_GPIO_WritePin(Cap_In_GPIO_Port, Cap_In_Pin, GPIO_PIN_RESET);
 			}else{
 					HAL_GPIO_WritePin(Cap_In_GPIO_Port, Cap_In_Pin, GPIO_PIN_SET);
@@ -594,8 +594,8 @@ static void Cap_Ctr_RELEASE() {
 
       #ifdef CAP_DEBUG
          if(++cnt>=5 && ncnt<DEBUG_HITS){
-          cps[0][ncnt] = PowerHeat.chassis_power * 100;
-          cps[1][ncnt] = PowerHeat.chassis_power_buffer  * 100;
+          cps[0][ncnt] = RefereeData.PowerHeat.chassis_power * 100;
+          cps[1][ncnt] = RefereeData.PowerHeat.chassis_power_buffer  * 100;
           cps[2][ncnt] = Cap_Get_Power_Voltage()*Cap_Get_Power_CURR()*100;
           cps[3][ncnt++] = VAL__OUTPUT_PWM_PERCENT * 100;
           cnt = 0;
@@ -629,9 +629,9 @@ static void Cap_Ctr_RELEASE() {
 		      Cap_State_Switch(CAP_STATE_TEMP_RECHARGE);
 	      }
 	      else {
-					#ifndef SUB_BOARD
+					#ifndef BOARD_SLAVE
 					if (VAL__CAP_VOLTAGE > RECHARGE_VOLTAGE_MAX  || fabs(CMFL.offical_speedPID.fdb - CMFL.offical_speedPID.ref) > 300 || fabs(CMFR.offical_speedPID.fdb - CMFR.offical_speedPID.ref) > 300 || \
-									fabs(CMBL.offical_speedPID.fdb - CMBL.offical_speedPID.ref) > 300 || fabs(CMBR.offical_speedPID.fdb - CMBR.offical_speedPID.ref) > 300 || PowerHeat.chassis_power_buffer < 59.0f ){
+									fabs(CMBL.offical_speedPID.fdb - CMBL.offical_speedPID.ref) > 300 || fabs(CMBR.offical_speedPID.fdb - CMBR.offical_speedPID.ref) > 300 || RefereeData.PowerHeat.chassis_power_buffer < 59.0f ){
 									HAL_GPIO_WritePin(Cap_In_GPIO_Port, Cap_In_Pin, GPIO_PIN_RESET);
 							}else{
 									HAL_GPIO_WritePin(Cap_In_GPIO_Port, Cap_In_Pin, GPIO_PIN_SET);
@@ -670,12 +670,12 @@ static void Cap_Ctr_RELEASE() {
   */
 cap_state cap_check;
 void Cap_Ctr() { // called with period of 2 ms
-	#ifdef SUB_BOARD
+	#ifdef BOARD_SLAVE
 	if (WorkState == STOP_STATE || WorkState == PREPARE_STATE) {
 		Cap_State_Switch(CAP_STATE_STOP);
 	}
 	#else
-	if (GameRobotState.remain_HP < 1 || WorkState == STOP_STATE || WorkState == PREPARE_STATE) {
+	if (RefereeData.GameRobotState.remain_HP < 1 || WorkState == STOP_STATE || WorkState == PREPARE_STATE) {
 		Cap_State_Switch(CAP_STATE_STOP);
 	}
 	#endif
@@ -751,7 +751,7 @@ uint8_t Client_Show_SuperCap_Voltage(void)
 		return 0;
 	else
 	{
-		light = (int)(8.0f * (Cap_Get_Cap_Voltage() * Cap_Get_Cap_Voltage() - 121.0f) / (21.0f * 21.0f - 121.0f));
-		return (uint8_t)(0xff00 >> light);
+		light = (int)(6.0f * (Cap_Get_Cap_Voltage() * Cap_Get_Cap_Voltage() - 121.0f) / (21.0f * 21.0f - 121.0f));
+		return (uint8_t)(0x0fc0 >> light);
 	}
 }

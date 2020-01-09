@@ -11,11 +11,45 @@
   */
 #include "includes.h"
 
-#define GATE_CLOSE	0
-#define GATE_OPEN 	1
+#ifdef INFANTRY_3
+#define FRIC_SPEED_1 	4000
+#define FRIC_SPEED_2 	5000
+#define FRIC_SPEED_3 	6000
+#define SHOOT_SPEED_1	12.0f
+#define SHOOT_SPEED_2	18.2f
+#define SHOOT_SPEED_4	20.0f
+#endif
+
+//遥控常量
+#define RC_CHASSIS_SPEED_REF    		0.85f
+#define RC_ROTATE_SPEED_REF 				0.07f
+#define RC_GIMBAL_SPEED_REF					0.006f
+//遥控器死区
+#define IGNORE_RANGE 								0
+//速度常量
+#define NORMAL_FORWARD_BACK_SPEED 	600
+#define NORMAL_LEFT_RIGHT_SPEED  		600/1.5f
+#define HIGH_FORWARD_BACK_SPEED 		800
+#define HIGH_LEFT_RIGHT_SPEED   		800/1.5f
+#define LOW_FORWARD_BACK_SPEED 			300
+#define LOW_LEFT_RIGHT_SPEED   			300/1.5f
+//扭腰幅度
+#define CHASSIS_TWIST_ANGLE_LIMIT		60
+//鼠标长按时间阈值
+#define MOUSE_LR_RAMP_TICK_COUNT		50
+#define MOUSR_FB_RAMP_TICK_COUNT		60
+//鼠标灵敏度
+#define MOUSE_TO_YAW_ANGLE_INC_FACT		((aim_mode != 0 && find_enemy) ? 0.03f : 0.06f)
+#define MOUSE_TO_PITCH_ANGLE_INC_FACT	((aim_mode != 0	&& find_enemy) ? 0.03f : 0.06f)
+//云台微调幅度
+#define SHOOTMODE_GM_ADJUST_ANGLE		0.05f
+//射击变量
 #define STIR_STEP_ANGLE 45
 #define	LONG_CD		200
 #define	SHORT_CD	50
+
+#define GATE_CLOSE	0
+#define GATE_OPEN 	1
 
 #define FRIC_ON() \
 {\
@@ -35,47 +69,37 @@ KeyboardMode_e KeyboardMode = NO_CHANGE;
 KeyboardMode_e LastKeyboardMode = NO_CHANGE;
 MouseMode_e MouseLMode = NO_CLICK;
 MouseMode_e MouseRMode = NO_CLICK;
-RampGen_t LRSpeedRamp = RAMP_GEN_DAFAULT;   	//斜坡函数
+//斜坡函数
+RampGen_t LRSpeedRamp = RAMP_GEN_DAFAULT;
 RampGen_t FBSpeedRamp = RAMP_GEN_DAFAULT;
+//速度变量
 ChassisSpeed_Ref_t ChassisSpeedRef;
-uint16_t LastKey=0;
-
-int ChassisTwistGapAngle = 0;
-
-int32_t auto_counter=0;		//用于准确延时的完成某事件
+//计时变量
+int32_t auto_counter=0;
 int32_t auto_counter_stir=0;
 int16_t auto_counter_heat0=0;
 int16_t auto_counter_heat1=0;
 int16_t shoot_cd=0;
-
+//遥控器拨杆数据
 int16_t channelrrow = 0;
 int16_t channelrcol = 0;
 int16_t channellrow = 0;
 int16_t channellcol = 0;
+
 uint8_t TestMode = 0;
 uint8_t ShootState = 0;
 uint8_t ChassisTwistState = 0;
-uint8_t cdflag0 = 0;
-uint8_t cdflag1 = 0;
-uint8_t burst = 0;
-int16_t cur_cd = LONG_CD; //发射间隔（ms），修改上方LONG_CD,SHORT_CD的宏定义
-
-#ifdef INFANTRY_3
-#define FRIC_SPEED_SLOW 	4000
-#define FRIC_SPEED_FAST 	5000
-#define SHOOT_SPEED_SLOW	12.0f
-#define SHOOT_SPEED_FAST	18.2f
-#endif
-int16_t FricSpeed = FRIC_SPEED_FAST;
-
-
+int8_t ChassisTwistGapAngle = 0;
 uint8_t chassis_lock = 0;//底盘锁定
 int16_t chassis_follow_center = GM_YAW_ZERO;//底盘跟随前方角度
-uint8_t block_flag = 0;//卡弹标记
-uint8_t gate_state = GATE_CLOSE;//弹仓盖状态
 
-//INFANTRY
-/***防卡弹相关变量***/
+int16_t FricSpeed = FRIC_SPEED_1;//摩擦轮转速
+float BulletSpeed = 18.0f;
+uint8_t burst = 0;//无视热量限制
+uint8_t block_flag = 0;//卡弹标记
+int16_t cur_cd = LONG_CD; //发射间隔
+
+uint8_t gate_state = GATE_CLOSE;//弹仓盖状态
 
 
 //初始化
@@ -91,27 +115,9 @@ void FunctionTaskInit()
 	ChassisSpeedRef.rotate_ref = 0.0f;
 	
 	KeyboardMode=NO_CHANGE;
-}
-
-void OptionalFunction()
-{
-	#ifdef USE_POWERLIMITATION
-//	if(Cap_Get_Cap_State() == CAP_STATE_STOP)
-//	{
-//		PowerLimitation(); //基于自测功率的功率限制，适用于充电和停止状态
-//	}
-//	else
-//	{
-//		if (Cap_Get_Cap_State() == CAP_STATE_RECHARGE || Cap_Get_Cap_State() == CAP_STATE_TEMP_RECHARGE)
-//			CurBased_PowerLimitation();//基于自测功率的功率限制，适用于充电和停止状态
-//		else
-//		{
-//			if (Cap_Get_Cap_State() == CAP_STATE_RELEASE)
-//				CapBased_PowerLimitation();//超级电容工作模式下的功率限制
-//		}
-//	}
-	PowerLimitation(); //基于自测功率的功率限制，适用于充电和停止状态
-	#endif
+	
+	FRIC_OFF();
+	STIR.TargetAngle = STIR.RealAngle;
 }
 
 //******************
@@ -131,7 +137,7 @@ void RemoteControlProcess(Remote *rc)
 	{
 		if(LastState!= WorkState && Cap_Get_Cap_State() != CAP_STATE_STOP)
 		{
-			#ifndef SUB_BOARD
+			#ifndef BOARD_SLAVE
 			Cap_State_Switch(CAP_STATE_STOP);
 			#endif
 		}
@@ -162,7 +168,7 @@ void RemoteControlProcess(Remote *rc)
 	{
 		if(LastState!= WorkState && Cap_Get_Cap_State() != CAP_STATE_RECHARGE)
 		{
-			#ifndef SUB_BOARD
+			#ifndef BOARD_SLAVE
 			Cap_State_Switch(CAP_STATE_RECHARGE);
 			#endif
 		}
@@ -193,7 +199,7 @@ void RemoteControlProcess(Remote *rc)
 	{
 		if(LastState!= WorkState && Cap_Get_Cap_State() != CAP_STATE_RELEASE && Cap_Get_Power_Voltage() > 11.5)
 		{
-			#ifndef SUB_BOARD
+			#ifndef BOARD_SLAVE
 			Cap_State_Switch(CAP_STATE_RELEASE);
 			#endif
 		}
@@ -237,7 +243,7 @@ void RemoteControlProcess(Remote *rc)
 		HAL_GPIO_WritePin(LASER_GPIO_Port, LASER_Pin, GPIO_PIN_SET);
 		if(LastState != WorkState)
 		{
-			ShootOneBullet();
+			ShootOneBullet(BULLET_TYPE);
 		}
 	}
 	
@@ -245,12 +251,6 @@ void RemoteControlProcess(Remote *rc)
 		gate_state = GATE_OPEN;
 	else
 		gate_state = GATE_CLOSE;
-	
-	if(ChassisTwistState)
-	{
-		ChassisTwist();
-	}
-	else ChassisDeTwist();
 
 	Bullet_Block_Handler();
 	Gate_Handler(gate_state);
@@ -378,7 +378,7 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 				if(!mouse->press_r)
 				{
 					if(shoot_cd == 0)
-						ShootOneBullet();
+						ShootOneBullet(BULLET_TYPE);
 				}
 			}
 			default: break;
@@ -473,13 +473,13 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 		//射速选择
 		if(key->v & KEY_Z)
 		{
-			FricSpeed = FRIC_SPEED_SLOW;
-			realBulletSpeed0 = SHOOT_SPEED_SLOW;
+			FricSpeed = FRIC_SPEED_1;
+			BulletSpeed = SHOOT_SPEED_1;
 		}
 		else if(key->v & KEY_X)
 		{
-			FricSpeed = FRIC_SPEED_FAST;
-			realBulletSpeed0 = SHOOT_SPEED_FAST;
+			FricSpeed = FRIC_SPEED_2;
+			BulletSpeed = SHOOT_SPEED_2;
 		}
 		
 		//自瞄模式选择
@@ -517,15 +517,11 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 		}
 	}
 
-	//扭腰、陀螺处理
-	if(ChassisTwistState) ChassisTwist();
-	else ChassisDeTwist();
 	//防卡弹处理
 	Bullet_Block_Handler();
 	
 	LED_Show_SuperCap_Voltage(1);
 	
-	LastKey=key->v;
 	LastState = WorkState;
 }
 
@@ -590,7 +586,7 @@ void KeyboardModeFSM(Key *key)
 		case MoveMode_CAP_RELEASE_LOW_MODE://
 			if(Cap_Get_Power_Voltage() > 11 && Cap_Get_Cap_State() != CAP_STATE_TEMP_RECHARGE && Cap_Get_Cap_State() != CAP_STATE_RELEASE)
 		  {
-				#ifndef SUB_BOARD
+				#ifndef BOARD_SLAVE
 			  Cap_State_Switch(CAP_STATE_RELEASE);
 				#endif
 		  }
@@ -624,7 +620,7 @@ void KeyboardModeFSM(Key *key)
 		case MoveMode_CAP_RECHARGE_MODE://
 			if(Cap_Get_Cap_State() != CAP_STATE_RECHARGE)
 		  {
-				#ifndef SUB_BOARD
+				#ifndef BOARD_SLAVE
 			  Cap_State_Switch(CAP_STATE_RECHARGE);
 				#endif
 		  }
@@ -682,7 +678,7 @@ void MouseModeFSM(Mouse *mouse)
 		{
 			if(mouse->press_l)
 			{
-				ShootOneBullet();
+				ShootOneBullet(BULLET_TYPE);
 				MouseLMode = SHORT_CLICK;
 			}
 		}break;
@@ -730,7 +726,7 @@ void MouseModeFSM(Mouse *mouse)
 }
 
 //用于遥控器模式下超级电容测试模式的控制
-void FreshSuperCState(void)
+void Test_Mode_Handler(void)
 {
 	static uint8_t counter = 0;
 	if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_2))
@@ -741,7 +737,8 @@ void FreshSuperCState(void)
 			TestMode = (TestMode==1)?0:1;
 		}
 	}
-	else{
+	else
+	{
 		counter = 0;
 	}
 	if(TestMode==1)
@@ -758,26 +755,75 @@ void FreshSuperCState(void)
 
 void ChassisTwist(void)
 {
-	
+	switch (ChassisTwistState)
+	{
+		case 1:
+		{
+			ChassisSpeedRef.rotate_ref = 50;
+			break;
+		}
+		case 2:
+		{
+			switch (ChassisTwistGapAngle)
+			{
+				case 0:
+				{
+					ChassisTwistGapAngle = CHASSIS_TWIST_ANGLE_LIMIT;
+					break;
+				}
+				case CHASSIS_TWIST_ANGLE_LIMIT:
+				{
+					if(fabs((-(GMY.RxMsgC6x0.angle - chassis_follow_center)) * 360 / 8192.0f - ChassisTwistGapAngle) < 10)
+						ChassisTwistGapAngle = -CHASSIS_TWIST_ANGLE_LIMIT;
+					break;
+				}
+				case -CHASSIS_TWIST_ANGLE_LIMIT:
+				{
+					if(fabs((-(GMY.RxMsgC6x0.angle - chassis_follow_center)) * 360 / 8192.0f - ChassisTwistGapAngle) < 10)
+						ChassisTwistGapAngle = CHASSIS_TWIST_ANGLE_LIMIT;
+					break;
+				}
+			}
+			ChassisSpeedRef.rotate_ref = (GMY.RxMsgC6x0.angle - chassis_follow_center) * 360 / 8192.0f - ChassisTwistGapAngle;
+			break;
+		}
+		default:
+		{
+			ChassisTwistGapAngle = 0;
+			ChassisSpeedRef.rotate_ref = (GMY.RxMsgC6x0.angle - chassis_follow_center) * 360 / 8192.0f - ChassisTwistGapAngle;
+			break;
+		}
+	}
 }
 
-void ChassisDeTwist(void)
-{
-	ChassisTwistGapAngle = 0;
-}
-
-void ShootOneBullet(void)
+void ShootOneBullet(uint8_t state)
 {
 	#ifndef USE_HEAT_LIMIT
 	STIR.TargetAngle -= STIR_STEP_ANGLE;
 	#else
-	cdflag0 = (fakeHeat0 > (maxHeat0 - realBulletSpeed0) && !burst) ? 1 : 0;
-	if(!cdflag0 && ShootState)
+	uint8_t cdflag0 = 0;
+	uint8_t cdflag1 = 0;
+	if(state == 0)
 	{
-		STIR.TargetAngle -= 45;
-		fakeHeat0 += realBulletSpeed0;
-		auto_counter_heat0 = 200;
-		shoot_cd = cur_cd;
+		cdflag0 = (maxHeat0 - fakeHeat0 < 20 && !burst) ? 1 : 0;
+		if(!cdflag0 && ShootState)
+		{
+			STIR.TargetAngle -= STIR_STEP_ANGLE;
+			fakeHeat0 += 10;
+			auto_counter_heat0 = 200;
+			shoot_cd = cur_cd;
+		}
+	}
+	if(state == 1)
+	{
+		cdflag1 = (maxHeat1 - fakeHeat1 < 105 && !burst) ? 1 : 0;
+		if(!cdflag1 && ShootState)
+		{
+			STIR.TargetAngle -= STIR_STEP_ANGLE;
+			fakeHeat0 += 100;
+			auto_counter_heat0 = 200;
+			shoot_cd = cur_cd;
+		}
 	}
 	#endif
 }
@@ -786,7 +832,7 @@ void Bullet_Block_Handler(void)
 {
 	OnePush(STIR.RxMsgC6x0.moment < -6000,
 	{
-		STIR.TargetAngle += 90;
+		STIR.TargetAngle += 1.5 * STIR_STEP_ANGLE;
 		auto_counter_stir = 100;
 		block_flag = 1;
 		ShootState = 0;
@@ -797,13 +843,13 @@ void Bullet_Block_Handler(void)
 		{
 			if(STIR.RxMsgC6x0.moment > -500)
 			{	
-				STIR.TargetAngle -= 45;
+				STIR.TargetAngle -= 0.5 * STIR_STEP_ANGLE;
 				ShootState = 1;
 				block_flag = 0;
 			}
 			else
 			{
-				STIR.TargetAngle += 45;
+				STIR.TargetAngle += STIR_STEP_ANGLE;
 				auto_counter_stir = 100;
 			}
 		});

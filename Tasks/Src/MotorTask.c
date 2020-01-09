@@ -11,7 +11,47 @@
   */
 #include "includes.h"
 
-//#define USE_GIMBAL_ENCODER
+//µ×ÅÌµç»úpid
+#define CHASSIS_MOTOR_SPEED_PID_DEFAULT \
+{\
+	0,0,{0,0},\
+	16.0f,0.0f,2.0f,\
+	0,0,0,\
+	20000,20000,20000,\
+	0,16384,0,0,0,\
+	&PID_Calc,&PID_Reset,\
+}
+//Ä¦²ÁÂÖpid
+#define FRIC_MOTOR_SPEED_PID_DEFAULT \
+{\
+	0,0,{0,0},\
+	30.0f,0.0f,5.0f,\
+	0,0,0,\
+	15000,15000,15000,\
+	0,10000,0,0,0,\
+	&PID_Calc,&PID_Reset,\
+}
+
+#define Normal_MOTORINFO_Init(rdc,func,ppid,spid)\
+{\
+	ESC_C6x0,0,0,0,rdc,\
+	{0,0,0},{0,0,0},0,0,1,0,0,func,\
+	ppid,spid,CHASSIS_MOTOR_SPEED_PID_DEFAULT,0 \
+}
+
+#define Chassis_MOTORINFO_Init(func,spid)\
+{\
+	ESC_C6x0,0,0,0,1,\
+	{0,0,0},{0,0,0},0,0,1,0,0,func,\
+	FW_PID_DEFAULT,FW_PID_DEFAULT,spid,0 \
+}
+
+#define Gimbal_MOTORINFO_Init(rdc,func,ppid,spid)\
+{\
+	ESC_C6x0,0,0,0,rdc,\
+	{0,0,0},{0,0,0},0,0,1,0,0,func,\
+	ppid,spid,CHASSIS_MOTOR_SPEED_PID_DEFAULT,0 \
+}
 
 void ControlNM(MotorINFO *id);
 void ControlCM(MotorINFO *id);
@@ -497,19 +537,4 @@ void Motor_ID_Setting()
 			can2[i]->TXID = 0x1ff;
 		}
 	}
-}
-
-float Py = 13.6f;
-float Qy = 1.0f;
-float Ry = 200.0f;
-float RotateSpeed_Yaw_Kalman_Filter(float input)
-{
-	static float rcd = 0;
-	float output;
-	Py = Py + Qy;
-	float Ky = Py / (Py + Ry);
-	output = rcd + Ky * (input - rcd);
-	rcd = output;
-	Py = (1 - Ky) * Py;
-	return output;
 }

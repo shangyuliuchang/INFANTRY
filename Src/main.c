@@ -160,7 +160,7 @@ int main(void)
 	HAL_TIM_Base_Start_IT(&htim7);
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3);
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
-	
+	Cap_Init();
 	//ADC
 	//HAL_ADC_Start_DMA(&hadc1,(uint32_t*)&ADC_Value,160);
 	
@@ -171,9 +171,6 @@ int main(void)
 	HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
 	HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
 	HAL_NVIC_EnableIRQ(TIM7_IRQn);
-	__HAL_UART_ENABLE_IT(&UPPER_UART, UART_IT_IDLE);
-	
-	Cap_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
