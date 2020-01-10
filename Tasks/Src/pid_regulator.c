@@ -46,8 +46,15 @@ void fw_PID_Calc(fw_PID_Regulator_t *pid){
 	MINMAX(pid->output, -pid->outputMax, pid->outputMax);
 }
 
+float PID_PROCESS(fw_PID_Regulator_t* pid,float target, float feedback)
+{
+	pid->target = target;
+	pid->feedback = feedback;
+	pid->Calc(pid);
+	return pid->output;
+}
 
-int16_t PID_PROCESS_Double(fw_PID_Regulator_t* pid_position,fw_PID_Regulator_t* pid_speed,float target, float position_feedback, float velocity_feedback)
+float PID_PROCESS_Double(fw_PID_Regulator_t* pid_position,fw_PID_Regulator_t* pid_speed,float target, float position_feedback, float velocity_feedback)
 {
 	//position		
 	pid_position->target = target;

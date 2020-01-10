@@ -76,11 +76,12 @@ typedef struct PID_Regulator_t
 	void (*Calc)(struct PID_Regulator_t *pid);
 	void (*Reset)(struct PID_Regulator_t *pid);
 }PID_Regulator_t;
+
 void PID_Reset(PID_Regulator_t *pid);
 void PID_Calc(PID_Regulator_t *pid);
 void chassisMixingPID(float kp,float ki,float kd,float kpE,float kiE,float kdE);
-int16_t PID_PROCESS_Double(fw_PID_Regulator_t* pid_position,fw_PID_Regulator_t* pid_speed,
-                            float target, float position_feedback, float velocity_feedback);
+float PID_PROCESS(fw_PID_Regulator_t* pid,float target, float feedback);
+float PID_PROCESS_Double(fw_PID_Regulator_t* pid_position,fw_PID_Regulator_t* pid_speed,float target, float position_feedback, float velocity_feedback);
 
 #endif
 

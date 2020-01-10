@@ -19,6 +19,8 @@
 #define k_angle			(180.0f/(32768.0f-1.0f))
 #define k_distance	(1000.0f/(32768.0f-1.0f))
 #define K_YAW				(1.5f)
+#define ENEMY_RED		(1)
+#define ENEMY_BLUE	(0)
 //角度补偿
 #ifdef INFANTRY_3
 	#define YAW_ADJUST												(0.5f)
@@ -37,6 +39,7 @@
 #endif
 //预测参数
 #ifdef INFANTRY_3
+	#define DELAY_T														(60)
 	#define PREDICT_STEPS											(13.5)
 	#define PREDICT_SHOOTABLE_BOUND_BELOW			(0.6f)
 	#define PREDICT_SHOOTABLE_BOUND_ABOVE			(0.6f)
@@ -50,24 +53,8 @@
 #define SHOOT_DELAY_TIME										(shoot_delay+enemy_dist*10.0f/BulletSpeed)
 //自瞄pid
 #ifdef INFANTRY_3
-	#define AUTOAIM_YAW_PREDICT_PID_DEFAULT \
-	{\
-		0,0,{0,0},\
-		1.2f,0.1f,0.0f,\
-		0,0,0,\
-		10,8,3,\
-		0,10,0,0,0,\
-		&PID_Calc,&PID_Reset,\
-	}
-	#define AUTOAIM_PITCH_PID_DEFAULT \
-	{\
-		0,0,{0,0},\
-		1.0f,0.05f,0.2f,\
-		0,0,0,\
-		10,8,3,\
-		0,10,0,0,0,\
-		&PID_Calc,&PID_Reset,\
-	}
+	#define AUTOAIM_YAW_PID_INIT() 						fw_PID_INIT(1.2f, 0.1f, 0.0f, 10.0, 8.0, 3.0, 10.0)
+	#define AUTOAIM_PITCH_PID_INIT()					fw_PID_INIT(1.0f, 0.05f, 0.2f, 10.0, 8.0, 3.0, 10.0)
 #endif
 
 uint8_t Enemy_INFO[8];
@@ -77,6 +64,7 @@ GMAngle_t aim_real;
 GMAngle_t aim_output;
 GMAngle_t adjust;
 GMAngle_t GM_RealAngle_RCD;
+uint8_t delay_t = DELAY_T;
 uint8_t aim_mode = 0;
 uint8_t	find_enemy = 0;
 uint8_t	aim_finish = 1;
@@ -86,8 +74,8 @@ uint16_t receive_cnt = 0;
 uint16_t receive_rcd = 0;
 uint16_t shoot_delay = SHOOT_DELAY;
 imu_t imu_w_RCD;
-PID_Regulator_t AutoAim_Yaw_Predict_pid = AUTOAIM_YAW_PREDICT_PID_DEFAULT;
-PID_Regulator_t AutoAim_Pitch_pid = AUTOAIM_PITCH_PID_DEFAULT;
+fw_PID_Regulator_t AutoAim_Yaw_pid = AUTOAIM_YAW_PID_INIT();
+fw_PID_Regulator_t AutoAim_Pitch_pid = AUTOAIM_PITCH_PID_INIT();
 int16_t last_change_time1 = 0;
 int16_t last_change_time2 = 0;
 bool isPeriod1 = true;
@@ -112,7 +100,7 @@ void AutoAimUartRxCpltCallback()
 	if(RX_ENEMY_START == 0x7f && RX_ENEMY_END == 0x26)
 	{
 		aim.yaw=YAW_DIR*(float)((((RX_ENEMY_YAW1<<8)|RX_ENEMY_YAW2)>0x7fff) ? (((RX_ENEMY_YAW1<<8)|RX_ENEMY_YAW2)-0xffff) : (RX_ENEMY_YAW1<<8)|RX_ENEMY_YAW2 )*k_angle;
-		aim.pitch=-PIT_DIR*(float)((((RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2)>0x7fff) ? (((RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2)-0xffff) : (RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2 )*k_angle;
+		aim.pitch=PIT_DIR*(float)((((RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2)>0x7fff) ? (((RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2)-0xffff) : (RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2 )*k_angle;
 		enemy_dist=(float)((RX_ENEMY_DIS1<<8)|RX_ENEMY_DIS2)*k_distance;
 		
 		find_enemy = 1;
@@ -210,7 +198,10 @@ float pit_const = 0;
 float pit_coef = 0;
 float steps = PREDICT_STEPS;
 float thres = ANTI_GYRO_THRES;
-float v_cur;
+float cur_v = 0;
+float cur_a = 0;
+float kalman_last_yaw = 0;
+float kalman_last_v = 0;
 float window;
 void AutoAimDataProcess()
 {
@@ -253,21 +244,18 @@ void AutoAimDataProcess()
 		aim_real.yaw = GM_RealAngle_RCD.yaw + aim.yaw * K_YAW + adjust.yaw;
 		float cur_yaw =  Real_Position_Kalman_Filter(aim_real.yaw);
 		//角速度滤波
-		static float kalman_last_yaw = 0;
-		float cur_v = cur_yaw - kalman_last_yaw;
+		cur_v = cur_yaw - kalman_last_yaw;
 		kalman_last_yaw = cur_yaw;
 		cur_v = Real_Speed_Kalman_Filter(cur_v);
-		v_cur = cur_v;
 		//角加速度滤波
-		static float kalman_last_v = 0;
-		float cur_a = cur_v - kalman_last_v;
+		cur_a = cur_v - kalman_last_v;
 		kalman_last_v = cur_v;
 		cur_a = Real_Accelerate_Kalman_Filter(cur_a);
 		//预测角度滤波
 		float final_prediction = Final_Kalman_Filter(cur_yaw + cur_v * steps + 0.5f * cur_a * steps * steps);
 		
 		//获得发射窗口参数
-		window = - (aim.yaw * K_YAW + adjust.yaw) / (v_cur * steps);
+		window = - (aim.yaw * K_YAW + adjust.yaw) / (cur_v * steps);
 		
 		//陀螺中心滤波
 		float gyro_center = cur_yaw;
@@ -300,25 +288,26 @@ void AutoAimDataProcess()
 			}
 		}
 		
-		//pid运算
-		AutoAim_Yaw_Predict_pid.ref = final_prediction - GM_RealAngle_RCD.yaw;
-		AutoAim_Yaw_Predict_pid.fdb = 0;
-		AutoAim_Yaw_Predict_pid.Calc(&AutoAim_Yaw_Predict_pid);
-		
-		AutoAim_Pitch_pid.ref = aim.pitch * 0.1f + adjust.pitch;
-		AutoAim_Pitch_pid.fdb = 0;
-		AutoAim_Pitch_pid.Calc(&AutoAim_Pitch_pid);
-		
 		//自瞄输出值
-		if(aim_mode == PREDICT_MODE)
+		if(aim_mode == 0)
 		{
-			aim_output.yaw = AutoAim_Yaw_Predict_pid.output;
+			AutoAim_Yaw_pid.Reset(&AutoAim_Yaw_pid);
+			AutoAim_Pitch_pid.Reset(&AutoAim_Pitch_pid);
+			kalman_last_yaw = 0;
+			kalman_last_v = 0;
 		}
-		else if(aim_mode == ANTI_GYRO_MODE)
+		else
 		{
-			aim_output.yaw = gyro_center - GM_RealAngle_RCD.yaw;
+			if(aim_mode == PREDICT_MODE)
+			{
+				aim_output.yaw = PID_PROCESS(&AutoAim_Yaw_pid, final_prediction, GM_RealAngle_RCD.yaw);
+			}
+			else if(aim_mode == ANTI_GYRO_MODE)
+			{
+				aim_output.yaw = PID_PROCESS(&AutoAim_Yaw_pid, gyro_center, GM_RealAngle_RCD.yaw);
+			}
+			aim_output.pitch = PID_PROCESS(&AutoAim_Pitch_pid, 0, aim.pitch * 0.1f + adjust.pitch);
 		}
-		aim_output.pitch = AutoAim_Pitch_pid.output;
 	}
 	//自瞄最大输出值限制
 	MINMAX(aim_output.yaw, -10.0f, 10.0f);
@@ -344,7 +333,7 @@ void AutoAimUartTxInfo()
 	uint8_t data[5];
 	int16_t imu_yaw_tmp = (int16_t)(imu.yaw / k_angle);
 	
-	data[0] = ((RefereeData.GameRobotState.robot_id >= 9) ? 1 : 0);
+	data[0] = ((RefereeData.GameRobotState.robot_id >= 9) ? ENEMY_RED : ENEMY_BLUE);
 	data[1] = (uint8_t)((imu_yaw_tmp >> 8) & 0xff);
 	data[2] = (uint8_t)((imu_yaw_tmp) & 0xff);
 	data[3] = 0;
@@ -401,16 +390,16 @@ void AutoShoot(uint8_t mode)
 	if(aim_mode == PREDICT_MODE)
 	{
 		//发射窗口条件判定
-		if(v_cur >= 0)
+		if(cur_v >= 0)
 		{
-			if(aim.yaw * K_YAW + adjust.yaw <= - v_cur * steps * PREDICT_SHOOTABLE_BOUND_BELOW && aim.yaw * K_YAW + adjust.yaw >= - v_cur * steps * PREDICT_SHOOTABLE_BOUND_ABOVE)
+			if(aim.yaw * K_YAW + adjust.yaw <= - cur_v * steps * PREDICT_SHOOTABLE_BOUND_BELOW && aim.yaw * K_YAW + adjust.yaw >= - cur_v * steps * PREDICT_SHOOTABLE_BOUND_ABOVE)
 				auto_shoot_flag = 1;
 			else
 				auto_shoot_flag = 0;
 		}
 		else
 		{
-			if(aim.yaw * K_YAW + adjust.yaw >= - v_cur * steps * PREDICT_SHOOTABLE_BOUND_BELOW && aim.yaw * K_YAW + adjust.yaw <= - v_cur * steps * PREDICT_SHOOTABLE_BOUND_ABOVE)
+			if(aim.yaw * K_YAW + adjust.yaw >= - cur_v * steps * PREDICT_SHOOTABLE_BOUND_BELOW && aim.yaw * K_YAW + adjust.yaw <= - cur_v * steps * PREDICT_SHOOTABLE_BOUND_ABOVE)
 				auto_shoot_flag = 1;
 			else
 				auto_shoot_flag = 0;
@@ -439,7 +428,7 @@ void AutoShoot(uint8_t mode)
 	}
 	
 	//目标静止
-	if(fabs(v_cur) < 0.3f && aim_output.yaw < 0.5f)
+	if(fabs(cur_v) < 0.3f && aim_output.yaw < 0.5f)
 		auto_shoot_flag = 1;
 	
 	//pitch到位判定

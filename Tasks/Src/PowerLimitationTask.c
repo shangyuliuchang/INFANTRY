@@ -14,33 +14,25 @@
 #include "math.h"
 
 float LimitFactor = 1.0f;
+uint8_t power_unlimit = 0;
+uint8_t power_limit_mode = 0;
+int32_t sum = 0;
 
 //底盘功率限制
 void No_Cap_PowerLimitation(void)
 {
-	uint16_t sum = 0;
 	int16_t CM_current_max;
 	int16_t CMFLIntensity = CMFL.Intensity;
 	int16_t CMFRIntensity = CMFR.Intensity;
 	int16_t CMBLIntensity = CMBL.Intensity;
 	int16_t CMBRIntensity = CMBR.Intensity;
+	static int16_t FLILast,FRILast,BLILast,BRILast;
 	
 	sum = __fabs(CMFLIntensity) + __fabs(CMFRIntensity) + __fabs(CMBLIntensity) + __fabs(CMBRIntensity);
-	static int16_t FLILast,FRILast,BLILast,BRILast;
-	//离线模式
-	if (JUDGE_State == OFFLINE)
+	
+	if(RefereeData.PowerHeat.chassis_power_buffer-((RefereeData.PowerHeat.chassis_power-80+10)>0?(RefereeData.PowerHeat.chassis_power-80+10):0)*0.1f < 20.0f)
 	{
-		CM_current_max = 4000;
-		if(sum > CM_current_max)
-		{
-			CMFLIntensity = (CMFLIntensity/(sum+1.0f))*CM_current_max;
-			CMFRIntensity = (CMFRIntensity/(sum+1.0f))*CM_current_max;
-			CMBLIntensity = (CMBLIntensity/(sum+1.0f))*CM_current_max;
-			CMBRIntensity = (CMBRIntensity/(sum+1.0f))*CM_current_max;
-		}
-	}
-	else if(RefereeData.PowerHeat.chassis_power_buffer-((RefereeData.PowerHeat.chassis_power-80+15)>0?(RefereeData.PowerHeat.chassis_power-80+15):0)*0.7f < 50.0f)
-	{
+		power_limit_mode = 0;
 		float realPowerBuffer = RefereeData.PowerHeat.chassis_power_buffer;
 		if(realPowerBuffer < 0) realPowerBuffer = 0;
 		LimitFactor = 2500 + 192*pow((realPowerBuffer),1);
@@ -52,7 +44,8 @@ void No_Cap_PowerLimitation(void)
 	}
 	else if(Cap_Get_Cap_State()!=CAP_STATE_RELEASE||Cap_Get_Cap_Voltage()<12)
 	{
-		CM_current_max = 11000;
+		power_limit_mode = 1;
+		CM_current_max = 14500;
 		if(sum > CM_current_max)
 		{
 			CMFLIntensity = (CMFLIntensity/(sum+0.0f))*CM_current_max;
@@ -61,7 +54,8 @@ void No_Cap_PowerLimitation(void)
 			CMBRIntensity = (CMBRIntensity/(sum+0.0f))*CM_current_max;
 		}
 	}
-	else if(sum>11000)
+	
+	if(sum>11000)
 	{
 	  FLILast=(CMFLIntensity>0?1:-1)*abs(FLILast);
 	  FRILast=(CMFRIntensity>0?1:-1)*abs(FRILast);
@@ -97,7 +91,6 @@ void No_Cap_PowerLimitation(void)
 //用于常态的基于自检测功率的功率限制
 void CurBased_PowerLimitation(void)
 {
-	int32_t sum = 0;
 	int32_t CM_current_max;
 	int32_t CMFLIntensity = CMFL.Intensity;
 	int32_t CMFRIntensity = CMFR.Intensity;
@@ -141,7 +134,6 @@ void CurBased_PowerLimitation(void)
 //用于放电模式下的基于自检测功率的功率限制
 void CapBased_PowerLimitation(void)
 {
-	int32_t sum = 0;
 	int32_t CM_current_max;
 	int32_t CMFLIntensity = CMFL.Intensity;
 	int32_t CMFRIntensity = CMFR.Intensity;
@@ -198,19 +190,42 @@ void CapBased_PowerLimitation(void)
 
 void PowerLimitation(void)
 {
-//	if(Cap_Get_Cap_State() == CAP_STATE_STOP)
-//	{
-//		No_Cap_PowerLimitation(); //基于自测功率的功率限制，适用于充电和停止状态
-//	}
-//	else
-//	{
-//		if (Cap_Get_Cap_State() == CAP_STATE_RECHARGE || Cap_Get_Cap_State() == CAP_STATE_TEMP_RECHARGE)
-//			CurBased_PowerLimitation();//基于自测功率的功率限制，适用于充电和停止状态
+	//无限功率模式判定
+	static uint16_t power_unlimit_cnt = 0;
+	if(RefereeData.PowerHeat.chassis_power_buffer != 0)
+	{
+		power_unlimit_cnt = 0;
+		power_unlimit = 0;
+	}
+	else
+	{
+		if(RefereeData.PowerHeat.chassis_power < 20 && RefereeData.PowerHeat.chassis_power_buffer == 0)
+		{
+			power_unlimit_cnt++;
+		}
+		if(power_unlimit_cnt > 200)
+		{
+			power_unlimit_cnt = 0;
+			power_unlimit = 1;
+		}
+	}
+	
+	if(!power_unlimit)
+	{
+//		if(Cap_Get_Cap_State() == CAP_STATE_STOP)
+//		{
+//			No_Cap_PowerLimitation(); //基于自测功率的功率限制，适用于充电和停止状态
+//		}
 //		else
 //		{
-//			if (Cap_Get_Cap_State() == CAP_STATE_RELEASE)
-//				CapBased_PowerLimitation();//超级电容工作模式下的功率限制
+//			if (Cap_Get_Cap_State() == CAP_STATE_RECHARGE || Cap_Get_Cap_State() == CAP_STATE_TEMP_RECHARGE)
+//				CurBased_PowerLimitation();//基于自测功率的功率限制，适用于充电和停止状态
+//			else
+//			{
+//				if (Cap_Get_Cap_State() == CAP_STATE_RELEASE)
+//					CapBased_PowerLimitation();//超级电容工作模式下的功率限制
+//			}
 //		}
-//	}
-	No_Cap_PowerLimitation(); //无电容的功率限制
+		No_Cap_PowerLimitation(); //无电容的功率限制
+	}
 }

@@ -17,14 +17,10 @@ uint16_t prepare_time = 0;
 uint16_t counter = 0;
 uint8_t	no_signal = 0;
 uint16_t IWDG_counter = 0;
-double rotate_speed = 0;
-PID_Regulator_t CMRotatePID = 
-{
-	0,0,{0,0},0.3f,0.0f,2.5f,
-	0,0,0,100,100,100,
-	0,50,0,0,0,\
-	&PID_Calc,&PID_Reset,\
 };
+float rotate_speed = 0;
+float rotate_speed_real = 0;
+fw_PID_Regulator_t chassis_rotate_pid = fw_PID_INIT(9.0f,0.1f,3.0f, 3000.0, 3000.0, 3000.0, 1500.0);//Todo:ki
 
 MusicNote SuperMario[] = {
 	{H3, 100}, {0, 50}, 
@@ -81,7 +77,7 @@ void WorkStateFSM(void)
 			if(prepare_time >= 500 && imu.InitFinish == 1 && isCan11FirstRx == 1 && isCan12FirstRx == 1 && isCan21FirstRx == 1 && isCan22FirstRx == 1)//imu初始化完成且所有can电机上电完成后进入正常模式
 			{
 				//playMusicSuperMario();
-				CMRotatePID.Reset(&CMRotatePID);
+				chassis_rotate_pid.Reset(&chassis_rotate_pid);
 				WorkState = NORMAL_STATE;
 				#ifdef BOARD_SLAVE
 				WorkState = RxWorkState;
@@ -184,11 +180,11 @@ void ControlRotate(void)
 		ChassisTwist();
 		NORMALIZE_ANGLE180(ChassisSpeedRef.rotate_ref);
 	#endif
-	CMRotatePID.ref = 0;
-	CMRotatePID.fdb = ChassisSpeedRef.rotate_ref;
-	CMRotatePID.Calc(&CMRotatePID);
-	if(ChassisTwistState) MINMAX(CMRotatePID.output,-50,50);
-	rotate_speed = CMRotatePID.output * 30;
+	if(abs(ChassisSpeedRef.rotate_ref) < 15)
+	{
+		chassis_rotate_pid.componentKi = 0;
+	}
+	rotate_speed = - YAW_DIR * PID_PROCESS(&chassis_rotate_pid, 0, (float)ChassisSpeedRef.rotate_ref);
 }
 
 void Chassis_Data_Decoding()
@@ -225,7 +221,6 @@ void Chassis_Data_Decoding()
 	}
 }
 
-int delay_t = 60;
 //主控制循环
 void controlLoop()
 {
@@ -259,7 +254,6 @@ void controlLoop()
 		
 		for(int i=0;i<8;i++) if(can1[i]!=0) (can1[i]->Handle)(can1[i]);
 		for(int i=0;i<8;i++) if(can2[i]!=0) (can2[i]->Handle)(can2[i]);
-		//Todo:底盘跟随pid
 		
 		PowerLimitation();
 

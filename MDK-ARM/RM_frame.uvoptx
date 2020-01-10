@@ -188,37 +188,17 @@
         <Ww>
           <count>7</count>
           <WinNumber>1</WinNumber>
-          <ItemText>JUDGE_State</ItemText>
+          <ItemText>power_limit_mode</ItemText>
         </Ww>
         <Ww>
           <count>8</count>
           <WinNumber>1</WinNumber>
-          <ItemText>STIR,0x0A</ItemText>
+          <ItemText>RefereeData.PowerHeat.chassis_power_buffer,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>9</count>
           <WinNumber>1</WinNumber>
-          <ItemText>RefereeData,0x0A</ItemText>
-        </Ww>
-        <Ww>
-          <count>10</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>check_buffer</ItemText>
-        </Ww>
-        <Ww>
-          <count>11</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>client_graphic_busy</ItemText>
-        </Ww>
-        <Ww>
-          <count>12</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>client_graphic_steps</ItemText>
-        </Ww>
-        <Ww>
-          <count>13</count>
-          <WinNumber>1</WinNumber>
-          <ItemText>client_graph</ItemText>
+          <ItemText>LimitFactor</ItemText>
         </Ww>
       </WatchWindow1>
       <WatchWindow2>

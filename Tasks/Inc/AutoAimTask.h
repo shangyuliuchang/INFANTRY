@@ -47,6 +47,7 @@ extern uint8_t aim_mode;
 extern uint8_t find_enemy;
 extern uint16_t auto_counter_autoaim;
 extern GMAngle_t GM_RealAngle_RCD;
+extern uint8_t delay_t;
 extern imu_t imu_w_RCD;
 extern uint8_t auto_shoot_flag;
 

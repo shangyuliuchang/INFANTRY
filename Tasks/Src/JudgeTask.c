@@ -595,18 +595,27 @@ void Referee_Transmit(void)
 
 void fakeHeatCalc(void)
 {
-	maxHeat0 = RefereeData.GameRobotState.shooter_heat0_cooling_limit;
-	cooldown0 = RefereeData.GameRobotState.shooter_heat0_cooling_rate;
-	maxHeat1 = RefereeData.GameRobotState.shooter_heat1_cooling_limit;
-	cooldown1 = RefereeData.GameRobotState.shooter_heat1_cooling_rate;
-
-	if(auto_counter_heat0==0)
+	if(JUDGE_State == ONLINE)
 	{
-		fakeHeat0 = RefereeData.PowerHeat.shooter_heat0;
+		maxHeat0 = RefereeData.GameRobotState.shooter_heat0_cooling_limit;
+		cooldown0 = RefereeData.GameRobotState.shooter_heat0_cooling_rate;
+		maxHeat1 = RefereeData.GameRobotState.shooter_heat1_cooling_limit;
+		cooldown1 = RefereeData.GameRobotState.shooter_heat1_cooling_rate;
+		if(auto_counter_heat0==0)
+		{
+			fakeHeat0 = RefereeData.PowerHeat.shooter_heat0;
+		}
+		if(auto_counter_heat1==0)
+		{
+			fakeHeat1 = RefereeData.PowerHeat.shooter_heat1;
+		}
 	}
-	if(auto_counter_heat1==0)
+	else
 	{
-		fakeHeat1 = RefereeData.PowerHeat.shooter_heat1;
+		maxHeat0 = MAXHEAT03;
+		cooldown0 = COOLDOWN03;
+		maxHeat1 = MAXHEAT13;
+		cooldown1 = COOLDOWN13;
 	}
 	
 	if(fakeHeat0 >= cooldown0/1000) fakeHeat0 -= cooldown0/1000;

@@ -103,7 +103,7 @@ void ControlNM(MotorINFO* id)
 		}
 		ThisSpeed = id->RxMsgC6x0.RotateSpeed * 6 / id->ReductionRate;
 		
-		id->Intensity = PID_PROCESS_Double(&(id->positionPID),&(id->speedPID),id->TargetAngle,id->RealAngle,ThisSpeed);
+		id->Intensity = (int16_t)PID_PROCESS_Double(&(id->positionPID),&(id->speedPID),id->TargetAngle,id->RealAngle,ThisSpeed);
 		
 		id->s_count = 0;
 		id->lastRead = ThisAngle;
@@ -186,7 +186,7 @@ void ControlGMY(MotorINFO* id)
 	else id->positionPID.outputMax = 10.0;
 	
 	id->lastRead = ThisAngle;
-	id->Intensity = PID_PROCESS_Double(&(id->positionPID),&(id->speedPID),id->TargetAngle,id->RealAngle,ThisSpeed);	
+	id->Intensity = (int16_t)PID_PROCESS_Double(&(id->positionPID),&(id->speedPID),id->TargetAngle,id->RealAngle,ThisSpeed);	
 }
 
 void ControlGMP(MotorINFO* id)
@@ -252,7 +252,7 @@ void ControlGMP(MotorINFO* id)
 	else id->positionPID.outputMax = 10.0;
 	
 	id->lastRead = ThisAngle ;
-	id->Intensity = GM_PITCH_GRAVITY_COMPENSATION + PID_PROCESS_Double(&(id->positionPID),&(id->speedPID),id->TargetAngle,id->RealAngle,ThisSpeed);
+	id->Intensity = GM_PITCH_GRAVITY_COMPENSATION + (int16_t)PID_PROCESS_Double(&(id->positionPID),&(id->speedPID),id->TargetAngle,id->RealAngle,ThisSpeed);
 }
 
 //CAN
