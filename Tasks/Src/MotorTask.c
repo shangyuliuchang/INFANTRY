@@ -32,27 +32,6 @@
 	&PID_Calc,&PID_Reset,\
 }
 
-#define Normal_MOTORINFO_Init(rdc,func,ppid,spid)\
-{\
-	ESC_C6x0,0,0,0,rdc,\
-	{0,0,0},{0,0,0},0,0,1,0,0,func,\
-	ppid,spid,CHASSIS_MOTOR_SPEED_PID_DEFAULT,0 \
-}
-
-#define Chassis_MOTORINFO_Init(func,spid)\
-{\
-	ESC_C6x0,0,0,0,1,\
-	{0,0,0},{0,0,0},0,0,1,0,0,func,\
-	FW_PID_DEFAULT,FW_PID_DEFAULT,spid,0 \
-}
-
-#define Gimbal_MOTORINFO_Init(rdc,func,ppid,spid)\
-{\
-	ESC_C6x0,0,0,0,rdc,\
-	{0,0,0},{0,0,0},0,0,1,0,0,func,\
-	ppid,spid,CHASSIS_MOTOR_SPEED_PID_DEFAULT,0 \
-}
-
 void ControlNM(MotorINFO *id);
 void ControlCM(MotorINFO *id);
 void ControlGMY(MotorINFO *id);
@@ -79,13 +58,13 @@ MotorINFO FRICR = Chassis_MOTORINFO_Init(&ControlCM,FRIC_MOTOR_SPEED_PID_DEFAULT
 //		     Gimbal_MOTORINFO_Init(rdc,func,ppid,spid)
 //************************************************************************
 //使用云台电机时，请务必确定校准过零点
-#ifdef INFANTRY
-MotorINFO GMP  = Normal_MOTORINFO_Init(1.0,&ControlGMP,
-           fw_PID_INIT(0.3,0.0,0.2, 100.0, 100.0, 100.0, 10.0),
-           fw_PID_INIT(8000.0,200.0,100.0, 50000.0, 50000.0, 50000.0, 30000.0));
-MotorINFO GMY  = Normal_MOTORINFO_Init(1.0,&ControlGMY,
-										 fw_PID_INIT(0.3,0.0,0.6,100.0, 100.0, 100.0, 10.0),
-										 fw_PID_INIT(10000.0,200.0,100.0, 50000.0, 50000.0, 50000.0, 30000.0));
+#ifdef INFANTRY_3
+MotorINFO GMP = Normal_MOTORINFO_Init(1.0,&ControlGMP,
+									 fw_PID_INIT(0.3,0.0,0.2, 100.0, 100.0, 100.0, 10.0),
+									 fw_PID_INIT(8000.0,200.0,100.0, 50000.0, 50000.0, 50000.0, 30000.0));
+MotorINFO GMY = Normal_MOTORINFO_Init(1.0,&ControlGMY,
+									 fw_PID_INIT(0.3,0.0,0.6,100.0, 100.0, 100.0, 10.0),
+									 fw_PID_INIT(10000.0,200.0,100.0, 50000.0, 50000.0, 50000.0, 30000.0));
 #endif
 //*************************************************************************
 //			Normal_MOTORINFO_Init(rdc,func,ppid,spid)
@@ -201,9 +180,7 @@ void ControlGMY(MotorINFO* id)
 		ChassisLockRCD = chassis_lock;
 	}
 	
-	#ifdef INFANTRY_3
-		if(fabs((GMY.RxMsgC6x0.angle - chassis_follow_center) * 360 / 8192.0f) < 1) GMYReseted = 1;
-	#endif
+	if(fabs((GMY.RxMsgC6x0.angle - chassis_follow_center) * 360 / 8192.0f) < 10) GMYReseted = 1;
 	
 	if(GMYReseted==0) id->positionPID.outputMax = 1.0;
 	else id->positionPID.outputMax = 10.0;
@@ -259,8 +236,7 @@ void ControlGMP(MotorINFO* id)
 			 id->RealAngle += (ThisAngle - id->lastRead)*dir;
 	}
 	
-	if(fabs(id->RealAngle-id->TargetAngle)<1) GMPReseted = 1;
-	
+	if(fabs(id->RealAngle - id->TargetAngle) < 10) GMPReseted = 1;
 	
 	if(chassis_lock != ChassisLockRCD)
 	{

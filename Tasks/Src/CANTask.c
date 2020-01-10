@@ -233,7 +233,7 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan){
 						can2[i]->RxMsgC6x0.angle		 = CanRxGetU16(Can2RxMsg, 0);
 						can2[i]->RxMsgC6x0.RotateSpeed   = CanRxGetU16(Can2RxMsg, 1);
 						can2[i]->RxMsgC6x0.moment		 = CanRxGetU16(Can2RxMsg, 2);
-						////云台编码器防越界处理
+						//云台编码器防越界处理
 						if(can2[i]==&GMY)
 						{
 							//改动该角度时需同时改动底盘掉头程序

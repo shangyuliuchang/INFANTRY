@@ -17,7 +17,7 @@
 #define FRIC_SPEED_3 	6000
 #define SHOOT_SPEED_1	12.0f
 #define SHOOT_SPEED_2	18.2f
-#define SHOOT_SPEED_4	20.0f
+#define SHOOT_SPEED_3	20.0f
 #endif
 
 //Ò£¿Ø³£Á¿
@@ -65,6 +65,12 @@
 	FRICR.TargetAngle = 0;\
 }
 
+void Test_Mode_Handler(void);
+void Bullet_Block_Handler(void);
+void Gate_Handler(uint8_t gate_state);
+void Chassis_forward_back_Handler(void);
+void Reset(uint8_t);
+
 KeyboardMode_e KeyboardMode = NO_CHANGE;
 KeyboardMode_e LastKeyboardMode = NO_CHANGE;
 MouseMode_e MouseLMode = NO_CLICK;
@@ -92,6 +98,9 @@ uint8_t ChassisTwistState = 0;
 int8_t ChassisTwistGapAngle = 0;
 uint8_t chassis_lock = 0;//µ×ÅÌËø¶¨
 int16_t chassis_follow_center = GM_YAW_ZERO;//µ×ÅÌ¸úËæÇ°·½½Ç¶È
+uint8_t chassis_change_forward_back = 0;
+uint8_t change_forward_back_rcd = 0;
+uint8_t change_forward_back_step = 0;
 
 int16_t FricSpeed = FRIC_SPEED_1;//Ä¦²ÁÂÖ×ªËÙ
 float BulletSpeed = 18.0f;
@@ -100,6 +109,7 @@ uint8_t block_flag = 0;//¿¨µ¯±ê¼Ç
 int16_t cur_cd = LONG_CD; //·¢Éä¼ä¸ô
 
 uint8_t gate_state = GATE_CLOSE;//µ¯²Ö¸Ç×´Ì¬
+uint8_t gate_first_enter = 1;
 
 
 //³õÊ¼»¯
@@ -117,7 +127,6 @@ void FunctionTaskInit()
 	KeyboardMode=NO_CHANGE;
 	
 	FRIC_OFF();
-	STIR.TargetAngle = STIR.RealAngle;
 }
 
 //******************
@@ -145,16 +154,11 @@ void RemoteControlProcess(Remote *rc)
 		ChassisSpeedRef.forward_back_ref = channelrcol * RC_CHASSIS_SPEED_REF;
 		ChassisSpeedRef.left_right_ref   = channelrrow * RC_CHASSIS_SPEED_REF/3*2;
 		#ifdef USE_CHASSIS_FOLLOW
-		#ifndef INFANTRY
-			GMY.TargetAngle += channellrow * RC_GIMBAL_SPEED_REF;
-			GMP.TargetAngle -= channellcol * RC_GIMBAL_SPEED_REF;
+			GMY.TargetAngle += YAW_DIR * channellrow * RC_GIMBAL_SPEED_REF;
+			GMP.TargetAngle += PIT_DIR * channellcol * RC_GIMBAL_SPEED_REF;
 		#else
-			GMY.TargetAngle -= channellrow * RC_GIMBAL_SPEED_REF;
-			GMP.TargetAngle += channellcol * RC_GIMBAL_SPEED_REF;
-		#endif
-		#else
-		ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF;
-		GMP.TargetAngle -= channellcol * RC_GIMBAL_SPEED_REF;
+			ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF;
+			GMP.TargetAngle += PIT_DIR * channellcol * RC_GIMBAL_SPEED_REF;
 		#endif
 		
 		chassis_lock = 0;
@@ -176,16 +180,11 @@ void RemoteControlProcess(Remote *rc)
 		ChassisSpeedRef.forward_back_ref = channelrcol * RC_CHASSIS_SPEED_REF;
 		ChassisSpeedRef.left_right_ref   = channelrrow * RC_CHASSIS_SPEED_REF/3*2;
 		#ifdef USE_CHASSIS_FOLLOW
-		#ifndef INFANTRY
-			GMY.TargetAngle += channellrow * RC_GIMBAL_SPEED_REF;
-			GMP.TargetAngle -= channellcol * RC_GIMBAL_SPEED_REF;
+			GMY.TargetAngle += YAW_DIR * channellrow * RC_GIMBAL_SPEED_REF;
+			GMP.TargetAngle += PIT_DIR * channellcol * RC_GIMBAL_SPEED_REF;
 		#else
-			GMY.TargetAngle -= channellrow * RC_GIMBAL_SPEED_REF;
-			GMP.TargetAngle += channellcol * RC_GIMBAL_SPEED_REF;
-		#endif
-		#else
-		ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF;
-		GMP.TargetAngle -= channellcol * RC_GIMBAL_SPEED_REF;
+			ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF;
+			GMP.TargetAngle += PIT_DIR * channellcol * RC_GIMBAL_SPEED_REF;
 		#endif
 		
 		chassis_lock = 0;
@@ -217,23 +216,18 @@ void RemoteControlProcess(Remote *rc)
 		  ChassisSpeedRef.left_right_ref   = channelrrow * RC_CHASSIS_SPEED_REF*1.5f;
 		}
 		#ifdef USE_CHASSIS_FOLLOW
-		#ifndef INFANTRY
-			GMY.TargetAngle += channellrow * RC_GIMBAL_SPEED_REF;
-			GMP.TargetAngle -= channellcol * RC_GIMBAL_SPEED_REF;
+			GMY.TargetAngle += YAW_DIR * channellrow * RC_GIMBAL_SPEED_REF;
+			GMP.TargetAngle += PIT_DIR * channellcol * RC_GIMBAL_SPEED_REF;
 		#else
-			GMY.TargetAngle -= channellrow * RC_GIMBAL_SPEED_REF;
-			GMP.TargetAngle += channellcol * RC_GIMBAL_SPEED_REF;
-		#endif
-		#else
-		if (Cap_Get_Power_Voltage() > 12 && Cap_Get_Cap_State() == CAP_STATE_RELEASE)
-		{
-		  ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF*1.5f;
-		}
-		else
-		{
-			ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF;
-		}
-		GMP.TargetAngle -= channellcol * RC_GIMBAL_SPEED_REF;
+			if (Cap_Get_Power_Voltage() > 12 && Cap_Get_Cap_State() == CAP_STATE_RELEASE)
+			{
+				ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF*1.5f;
+			}
+			else
+			{
+				ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF;
+			}
+			GMP.TargetAngle += PIT_DIR * channellcol * RC_GIMBAL_SPEED_REF;
 		#endif
 		
 		chassis_lock = 0;
@@ -286,15 +280,11 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 		ChassisSpeedRef.forward_back_ref = channelrcol * RC_CHASSIS_SPEED_REF;
 		ChassisSpeedRef.left_right_ref   = channelrrow * RC_CHASSIS_SPEED_REF/3*2;
 		#ifdef USE_CHASSIS_FOLLOW
-		#ifndef INFANTRY
-			GMY.TargetAngle += channellrow * RC_GIMBAL_SPEED_REF;
-			GMP.TargetAngle -= channellcol * RC_GIMBAL_SPEED_REF;
+			GMY.TargetAngle += YAW_DIR * channellrow * RC_GIMBAL_SPEED_REF;
+			GMP.TargetAngle += PIT_DIR * channellcol * RC_GIMBAL_SPEED_REF;
 		#else
-			GMY.TargetAngle -= channellrow * RC_GIMBAL_SPEED_REF;
-			GMP.TargetAngle += channellcol * RC_GIMBAL_SPEED_REF;
-		#endif
-		#else
-		ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF;
+			ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF;
+			GMP.TargetAngle += PIT_DIR * channellcol * RC_GIMBAL_SPEED_REF;
 		#endif
 		
 		chassis_lock = 0;
@@ -308,15 +298,11 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 		ChassisSpeedRef.forward_back_ref = channelrcol * RC_CHASSIS_SPEED_REF;
 		ChassisSpeedRef.left_right_ref   = channelrrow * RC_CHASSIS_SPEED_REF/3*2;
 		#ifdef USE_CHASSIS_FOLLOW
-		#ifndef INFANTRY
-			GMY.TargetAngle += channellrow * RC_GIMBAL_SPEED_REF;
-			GMP.TargetAngle -= channellcol * RC_GIMBAL_SPEED_REF;
+			GMY.TargetAngle += YAW_DIR * channellrow * RC_GIMBAL_SPEED_REF;
+			GMP.TargetAngle += PIT_DIR * channellcol * RC_GIMBAL_SPEED_REF;
 		#else
-			GMY.TargetAngle -= channellrow * RC_GIMBAL_SPEED_REF;
-			GMP.TargetAngle += channellcol * RC_GIMBAL_SPEED_REF;
-		#endif
-		#else
-		ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF;
+			ChassisSpeedRef.rotate_ref = -channellrow * RC_ROTATE_SPEED_REF;
+			GMP.TargetAngle += PIT_DIR * channellcol * RC_GIMBAL_SPEED_REF;
 		#endif
 		
 		chassis_lock = 0;
@@ -332,15 +318,10 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 		MINMAX(mouse->y, -150, 150); 
 		
 		#ifdef USE_CHASSIS_FOLLOW
-		#ifndef INFANTRY
-			GMY.TargetAngle += mouse->x * MOUSE_TO_YAW_ANGLE_INC_FACT;
-			GMP.TargetAngle += mouse->y * MOUSE_TO_PITCH_ANGLE_INC_FACT;
+			GMY.TargetAngle += YAW_DIR * mouse->x * MOUSE_TO_YAW_ANGLE_INC_FACT;
+			GMP.TargetAngle -= PIT_DIR * mouse->y * MOUSE_TO_PITCH_ANGLE_INC_FACT;
 		#else
-			GMY.TargetAngle -= mouse->x * MOUSE_TO_YAW_ANGLE_INC_FACT;
-			GMP.TargetAngle -= mouse->y * MOUSE_TO_PITCH_ANGLE_INC_FACT;
-		#endif
-		#else
-		ChassisSpeedRef.rotate_ref = -mouse->x * RC_ROTATE_SPEED_REF;
+			ChassisSpeedRef.rotate_ref = -mouse->x * RC_ROTATE_SPEED_REF;
 		#endif
 		
 		FRIC_ON();
@@ -422,13 +403,13 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 		if(chassis_lock)
 		{
 			if(key->v & KEY_W)  			//key: w
-				GMP.TargetAngle -= SHOOTMODE_GM_ADJUST_ANGLE;
+				GMP.TargetAngle += PIT_DIR * SHOOTMODE_GM_ADJUST_ANGLE;
 			else if(key->v & KEY_S) 	//key: s
-				GMP.TargetAngle += SHOOTMODE_GM_ADJUST_ANGLE;
+				GMP.TargetAngle -= PIT_DIR * SHOOTMODE_GM_ADJUST_ANGLE;
 			if(key->v & KEY_D)  			//key: d
-				GMY.TargetAngle += SHOOTMODE_GM_ADJUST_ANGLE;
+				GMY.TargetAngle += YAW_DIR * SHOOTMODE_GM_ADJUST_ANGLE;
 			else if(key->v & KEY_A) 	//key: a
-				GMY.TargetAngle -= SHOOTMODE_GM_ADJUST_ANGLE;
+				GMY.TargetAngle -= YAW_DIR * SHOOTMODE_GM_ADJUST_ANGLE;
 		}
 		
 		//µ×ÅÌÔË¶¯¿ØÖÆ
@@ -453,8 +434,8 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 		
 		//Å¤Ñü¡¢ÍÓÂÝÄ£Ê½Ñ¡Ôñ
 		if(key->v & KEY_Q) {ChassisTwistState = 1; chassis_lock = 0;}
-		if(key->v & KEY_E) {ChassisTwistState = 2; chassis_lock = 0;}
-		if(key->v & KEY_F) Reset();
+		if(key->v & KEY_E) {ChassisTwistState = 3; chassis_lock = 0;}
+		if(key->v & KEY_F) Reset(0);
 		
 		//ÉäÆµÑ¡Ôñ
 		if(KeyboardMode == SHIFT_CTRL || KeyboardMode == CTRL || (mouse->press_r && mouse->press_l && auto_shoot_flag == 1))
@@ -509,6 +490,16 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 		else
 		{
 			aim_mode = 0;
+		}
+		
+		//UI test
+		if(KeyboardMode == CTRL && key->v & KEY_B)
+		{
+			Client_Graph_Start();
+		}
+		else if(key->v & KEY_B)
+		{
+			Client_Graph_Clear();
 		}
 		
 		if(LastState != WorkState)
@@ -764,6 +755,11 @@ void ChassisTwist(void)
 		}
 		case 2:
 		{
+			ChassisSpeedRef.rotate_ref = 50;
+			break;
+		}
+		case 3:
+		{
 			switch (ChassisTwistGapAngle)
 			{
 				case 0:
@@ -773,13 +769,13 @@ void ChassisTwist(void)
 				}
 				case CHASSIS_TWIST_ANGLE_LIMIT:
 				{
-					if(fabs((-(GMY.RxMsgC6x0.angle - chassis_follow_center)) * 360 / 8192.0f - ChassisTwistGapAngle) < 10)
+					if(fabs(YAW_DIR * (chassis_follow_center - GMY.RxMsgC6x0.angle) * 360 / 8192.0f - ChassisTwistGapAngle) < 10)
 						ChassisTwistGapAngle = -CHASSIS_TWIST_ANGLE_LIMIT;
 					break;
 				}
 				case -CHASSIS_TWIST_ANGLE_LIMIT:
 				{
-					if(fabs((-(GMY.RxMsgC6x0.angle - chassis_follow_center)) * 360 / 8192.0f - ChassisTwistGapAngle) < 10)
+					if(fabs(YAW_DIR * (chassis_follow_center - GMY.RxMsgC6x0.angle) * 360 / 8192.0f - ChassisTwistGapAngle) < 10)
 						ChassisTwistGapAngle = CHASSIS_TWIST_ANGLE_LIMIT;
 					break;
 				}
@@ -793,6 +789,42 @@ void ChassisTwist(void)
 			ChassisSpeedRef.rotate_ref = (GMY.RxMsgC6x0.angle - chassis_follow_center) * 360 / 8192.0f - ChassisTwistGapAngle;
 			break;
 		}
+	}
+}
+
+void Chassis_forward_back_Handler(void)
+{
+	if(!chassis_lock)
+	{
+		if(change_forward_back_rcd != chassis_change_forward_back)
+		{
+			change_forward_back_step = 1;
+		}
+
+		switch(change_forward_back_step)
+		{
+			case 2:
+			{
+				chassis_follow_center = GM_YAW_ZERO - 2048;
+				if(fabs((GMY.RxMsgC6x0.angle - chassis_follow_center) * 360 / 8192.0f) < 45)
+				{
+					change_forward_back_step = 1;
+				}
+				break;
+			}
+			case 1:
+			{
+				chassis_follow_center = GM_YAW_ZERO - (chassis_change_forward_back ? 4096 : 0);
+				if(fabs((GMY.RxMsgC6x0.angle - chassis_follow_center) * 360 / 8192.0f) < 45)
+				{
+					change_forward_back_step = 0;
+				}
+				break;
+			}
+			default: change_forward_back_step = 0; break;
+		}
+		
+		change_forward_back_rcd = chassis_change_forward_back;
 	}
 }
 
@@ -856,15 +888,15 @@ void Bullet_Block_Handler(void)
 	}
 }
 
-void Reset(void)
-{
-	ChassisTwistState = 0;
-	chassis_lock = 0;
-	gate_state = GATE_CLOSE;
-}
-
-uint8_t gate_first_enter = 1;
 void Gate_Handler(uint8_t gate_state)
 {
 	
+}
+
+void Reset(uint8_t chassis_forward_back)
+{
+	ChassisTwistState = 0;
+	chassis_lock = 0;
+	chassis_change_forward_back =  chassis_forward_back;
+	gate_state = GATE_CLOSE;
 }

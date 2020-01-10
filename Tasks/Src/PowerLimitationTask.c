@@ -39,7 +39,7 @@ void No_Cap_PowerLimitation(void)
 			CMBRIntensity = (CMBRIntensity/(sum+1.0f))*CM_current_max;
 		}
 	}
-	else if(RefereeData.PowerHeat.chassis_power_buffer-((RefereeData.PowerHeat.chassis_power-cur_robot_status.power_limit+15)>0?(RefereeData.PowerHeat.chassis_power-cur_robot_status.power_limit+15):0)*0.5f < 50.0f)
+	else if(RefereeData.PowerHeat.chassis_power_buffer-((RefereeData.PowerHeat.chassis_power-80+15)>0?(RefereeData.PowerHeat.chassis_power-80+15):0)*0.7f < 50.0f)
 	{
 		float realPowerBuffer = RefereeData.PowerHeat.chassis_power_buffer;
 		if(realPowerBuffer < 0) realPowerBuffer = 0;
@@ -118,7 +118,7 @@ void CurBased_PowerLimitation(void)
 	}
 	
 	//·Â¹ðµç²ßÂÔ
-	else if((RefereeData.PowerHeat.chassis_power_buffer-((Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-cur_robot_status.power_limit+15)>0?(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-cur_robot_status.power_limit+15):0)*0.5f < 50.0f))
+	else if((RefereeData.PowerHeat.chassis_power_buffer-((Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-80+15)>0?(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-80+15):0)*0.5f < 50.0f))
 	{
 		sum = __fabs(CMFLIntensity) + __fabs(CMFRIntensity) + __fabs(CMBLIntensity) + __fabs(CMBRIntensity);
 		float realPowerBuffer = RefereeData.PowerHeat.chassis_power_buffer;
@@ -162,7 +162,7 @@ void CapBased_PowerLimitation(void)
 			CMBRIntensity = (CMBRIntensity/(sum+1.0f))*CM_current_max;
 		}
 	}
-	else if( (RefereeData.PowerHeat.chassis_power_buffer-((Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-cur_robot_status.power_limit+10)>0?(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-cur_robot_status.power_limit+10):0)*1.0f < 50.0f))
+	else if( (RefereeData.PowerHeat.chassis_power_buffer-((Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-80+10)>0?(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()-80+10):0)*1.0f < 50.0f))
 	{
 		sum = __fabs(CMFLIntensity) + __fabs(CMFRIntensity) + __fabs(CMBLIntensity) + __fabs(CMBRIntensity);
 		float realPowerBuffer = RefereeData.PowerHeat.chassis_power_buffer;

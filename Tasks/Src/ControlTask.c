@@ -95,7 +95,6 @@ void WorkStateFSM(void)
 					InitMotor(can2[i]);
 				}
 			}
-			FunctionTaskInit();
 			#ifdef CAN11
 			setCAN11();
 			#endif
@@ -108,6 +107,7 @@ void WorkStateFSM(void)
 			#ifdef CAN22
 			setCAN22();
 			#endif
+			FunctionTaskInit();
 		}break;
 		case NORMAL_STATE:				//正常模式
 		{
@@ -233,7 +233,6 @@ void controlLoop()
 	//裁判系统
 	getJudgeState();
 	fakeHeatCalc();
-	Refresh_Client_Data();
 	//板间can通信
 	#ifdef DOUBLE_BOARD_CAN1
 	CANTxInfo(&hcan1);
@@ -312,7 +311,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				while(HAL_UART_Receive_DMA(&RC_UART, rc_data, 18)!= HAL_OK);
 				if(counter >= 5) 
 				{
-					Referee_Transmit_UserData();
+					Referee_Transmit();
 					counter = 0;
 				}
 				else counter++;	

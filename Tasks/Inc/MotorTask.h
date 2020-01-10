@@ -24,6 +24,20 @@
 
 #define NORMALIZE_ANGLE180(angle) angle = ((angle) > 180) ? ((angle) - 360) : (((angle) < -180) ? (angle) + 360 : angle)
 
+#define Normal_MOTORINFO_Init(rdc,func,ppid,spid)\
+{\
+	ESC_C6x0,0,0,0,rdc,\
+	{0,0,0},{0,0,0},0,0,1,0,0,func,\
+	ppid,spid,CHASSIS_MOTOR_SPEED_PID_DEFAULT,0 \
+}
+
+#define Chassis_MOTORINFO_Init(func,spid)\
+{\
+	ESC_C6x0,0,0,0,1,\
+	{0,0,0},{0,0,0},0,0,1,0,0,func,\
+	FW_PID_DEFAULT,FW_PID_DEFAULT,spid,0 \
+}
+
 #define FW_PID_DEFAULT \
 { \
 	0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ,\

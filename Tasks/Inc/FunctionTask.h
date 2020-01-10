@@ -114,11 +114,7 @@ extern float BulletSpeed;
 extern int16_t shoot_cd;
 
 void FunctionTaskInit(void);
-void Test_Mode_Handler(void);
 void ChassisTwist(void);
 void ShootOneBullet(uint8_t);
-void Bullet_Block_Handler(void);
-void Reset(void);
-void Gate_Handler(uint8_t gate_state);
 
 #endif /*__FUNCTIONTASK_H*/

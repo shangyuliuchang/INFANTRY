@@ -232,9 +232,8 @@ extern robot_status_t cur_robot_status;
 void judgeUartRxCpltCallback(void);
 void InitJudgeUart(void);
 void getJudgeState(void);
-void Referee_Transmit_UserData(void);
-void Referee_Transmit_ClientGraph(void);
+void Referee_Transmit(void);
 void fakeHeatCalc(void);
-void Refresh_Client_Data(void);
-void Refresh_Client_Graph(void);
+void Client_Graph_Start(void);
+void Client_Graph_Clear(void);
 #endif /*__ JUDGETASK_H */

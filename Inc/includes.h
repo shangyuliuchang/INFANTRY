@@ -20,6 +20,8 @@
 #endif
 
 #define BULLET_TYPE 0
+#define YAW_DIR (-1.0f)
+#define PIT_DIR (1.0f)
 
 //双板通信配置
 //#define DOUBLE_BOARD_CAN1

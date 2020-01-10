@@ -26,6 +26,9 @@ static void Referee_Update_AerialEnergy(void);
 static void Referee_Update_RobotHurt(void);
 static void Referee_Update_ShootData(void);
 static void Referee_Update_BulletRemaining(void);
+static void Refresh_Client_Data(void);
+static void Referee_Transmit_UserData(void);
+static void Client_Graph_Process(void);
 
 uint8_t JUDGE_Received = 0;
 JudgeState_e JUDGE_State = OFFLINE;
@@ -40,6 +43,9 @@ float fakeHeat1 = 0;
 float cooldown0 = COOLDOWN03;
 float cooldown1 = COOLDOWN13;
 robot_status_t cur_robot_status;
+
+uint8_t client_graphic_steps = 0;
+uint8_t client_graphic_busy = 0;
 
 uint8_t tmp_judge;
 void InitJudgeUart(void){
@@ -468,7 +474,9 @@ void Referee_Update_BulletRemaining()
 
 uint8_t check_buffer[28] = {0};
 void Referee_Transmit_UserData()
-{	
+{
+	Refresh_Client_Data();
+	
 	uint8_t buffer[28] = {0};
 	uint8_t * ud1 = (uint8_t*)&custom_data.data1;
 	uint8_t * ud2 = (uint8_t*)&custom_data.data2;
@@ -506,18 +514,13 @@ void Referee_Transmit_UserData()
 		check_buffer[i] = buffer[i];
 	}
 
-	if(tx_free)
-	{
-		if(HAL_UART_Transmit_DMA(&JUDGE_UART,(uint8_t *)&buffer,sizeof(buffer))!=HAL_OK)
-		{
-			Error_Handler();
-		}
-		tx_free = 0;
-	}
+	HAL_UART_Transmit(&JUDGE_UART,(uint8_t *)&buffer,sizeof(buffer),0xff);
 }
 
 void Referee_Transmit_ClientGraph()
 {
+	Client_Graph_Process();
+	
 	uint8_t buffer[70] = {0};
 	uint8_t * cg1 = (uint8_t*)&client_graph.graphic_name;
 	uint8_t * cg2 = (uint8_t*)&client_graph.start_x;
@@ -539,8 +542,8 @@ void Referee_Transmit_ClientGraph()
 	buffer[5] = 0x01;
 	buffer[6] = 0x03;
 	//数据的内容 ID:0x0100  ,占两个字节
-	buffer[7] = 0x80;
-	buffer[8] = 0xD1;
+	buffer[7] = 0x00;
+	buffer[8] = 0x01;
 	//发送者的 ID, 占两个字节
 	buffer[9] = RefereeData.GameRobotState.robot_id;
 	buffer[10] = 0;
@@ -572,13 +575,21 @@ void Referee_Transmit_ClientGraph()
 		check_buffer[i] = buffer[i];
 	}
 
-	if(tx_free)
+	HAL_UART_Transmit(&JUDGE_UART,(uint8_t *)&buffer,sizeof(buffer),0xff);
+	client_graphic_busy = 0;
+	if(client_graphic_steps > 0)
+		client_graphic_steps--;
+}
+
+void Referee_Transmit(void)
+{
+	if(client_graphic_steps > 0)
 	{
-		if(HAL_UART_Transmit_DMA(&JUDGE_UART,(uint8_t *)&buffer,sizeof(buffer))!=HAL_OK)
-		{
-			Error_Handler();
-		}
-		tx_free = 0;
+		Referee_Transmit_ClientGraph();
+	}
+	else
+	{
+		Referee_Transmit_UserData();
 	}
 }
 
@@ -606,30 +617,156 @@ void fakeHeatCalc(void)
 
 void Refresh_Client_Data(void)
 {
-	custom_data.data1 = (float)GMP.RealAngle;
-	custom_data.data2 = (float)GMY.RealAngle;
+	custom_data.data1 = (float)YAW_DIR * GMY.RealAngle;
+	custom_data.data2 = (float)PIT_DIR * GMP.RealAngle;
 	custom_data.data3 = 0x01;
 	custom_data.masks = Client_Show_SuperCap_Voltage();//二进制最左位对应灯条最右灯
 }
 
-void Refresh_Client_Graph(void)//Todo
+void Client_Graph_Process(void)
 {
-	client_graph.operate_type = 1;
-	client_graph.graphic_type = 3;
+	if(client_graphic_busy)
+		return;
+	
+	switch(client_graphic_steps)
+	{
+		case 8:
+		{
+			client_graph.operate_type = 1;
+			client_graph.graphic_type = 3;
+			client_graph.start_x = 960;
+			client_graph.start_y = 540;
+			client_graph.radius = 240;
+			client_graph.end_x = 0;
+			client_graph.end_y = 0;
+			client_graph.start_angle = 0;
+			client_graph.end_angle = 0;
+		}break;
+		case 7:
+		{
+			client_graph.operate_type = 1;
+			client_graph.graphic_type = 5;
+			client_graph.start_x = 960;
+			client_graph.start_y = 540;
+			client_graph.radius = 0;
+			client_graph.end_x = 200;
+			client_graph.end_y = 200;
+			client_graph.start_angle = 95;
+			client_graph.end_angle = -110;
+		}break;
+		case 6:
+		{
+			client_graph.operate_type = 1;
+			client_graph.graphic_type = 5;
+			client_graph.start_x = 1070;
+			client_graph.start_y = 540;
+			client_graph.radius = 0;
+			client_graph.end_x = 100;
+			client_graph.end_y = 100;
+			client_graph.start_angle = -55;
+			client_graph.end_angle = 40;
+		}break;
+		case 5:
+		{
+			client_graph.operate_type = 1;
+			client_graph.graphic_type = 5;
+			client_graph.start_x = 1070;
+			client_graph.start_y = 540;
+			client_graph.radius = 0;
+			client_graph.end_x = 140;
+			client_graph.end_y = 140;
+			client_graph.start_angle = -55;
+			client_graph.end_angle = 40;
+		}break;
+		case 4:
+		{
+			client_graph.operate_type = 1;
+			client_graph.graphic_type = 5;
+			client_graph.start_x = 850;
+			client_graph.start_y = 540;
+			client_graph.radius = 0;
+			client_graph.end_x = 100;
+			client_graph.end_y = 100;
+			client_graph.start_angle = -55;
+			client_graph.end_angle = 40;
+		}break;
+		case 3:
+		{
+			client_graph.operate_type = 1;
+			client_graph.graphic_type = 5;
+			client_graph.start_x = 850;
+			client_graph.start_y = 540;
+			client_graph.radius = 0;
+			client_graph.end_x = 140;
+			client_graph.end_y = 140;
+			client_graph.start_angle = -55;
+			client_graph.end_angle = 40;
+		}break;
+		case 2:
+		{
+			client_graph.operate_type = 1;
+			client_graph.graphic_type = 3;
+			client_graph.start_x = 985;
+			client_graph.start_y = 625;
+			client_graph.radius = 20;
+			client_graph.end_x = 0;
+			client_graph.end_y = 0;
+			client_graph.start_angle = 0;
+			client_graph.end_angle = 0;
+		}break;
+		case 1:
+		{
+			client_graph.operate_type = 1;
+			client_graph.graphic_type = 3;
+			client_graph.start_x = 765;
+			client_graph.start_y = 625;
+			client_graph.radius = 20;
+			client_graph.end_x = 0;
+			client_graph.end_y = 0;
+			client_graph.start_angle = 0;
+			client_graph.end_angle = 0;
+		}break;
+		default: break;
+	}
+	
 	for(int i = 0; i < 5; i++)
 	{
-		client_graph.graphic_name[i] = 0;
+		client_graph.graphic_name[i] = client_graphic_steps;
 	}
 	client_graph.layer = 0;
 	client_graph.color = 0;
 	client_graph.width = 10;
-	client_graph.start_x = 960;
-	client_graph.start_y = 540;
-	client_graph.radius = 100;
+	client_graph.text_length = 0;
+	//client_graph.text
+	
+	client_graphic_busy = 1;
+}
+
+void Client_Graph_Start(void)
+{
+	if(client_graphic_steps == 0)
+	{
+		client_graphic_steps = 8;
+	}
+}
+
+void Client_Graph_Clear(void)
+{
+	client_graphic_steps = 1;
+	client_graphic_busy = 1;
+	
+	client_graph.operate_type = 5;
+	client_graph.graphic_type = 0;
+	client_graph.layer = 0;
+	for(int i = 0; i < 5; i++)
+	{
+		client_graph.graphic_name[i] = client_graphic_steps;
+	}
+	client_graph.start_x = 0;
+	client_graph.start_y = 0;
+	client_graph.radius = 0;
 	client_graph.end_x = 0;
 	client_graph.end_y = 0;
 	client_graph.start_angle = 0;
 	client_graph.end_angle = 0;
-	client_graph.text_length = 0;
-	//client_graph.text
 }

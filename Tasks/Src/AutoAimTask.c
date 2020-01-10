@@ -111,8 +111,8 @@ void AutoAimUartRxCpltCallback()
 {
 	if(RX_ENEMY_START == 0x7f && RX_ENEMY_END == 0x26)
 	{
-		aim.yaw=-(float)((((RX_ENEMY_YAW1<<8)|RX_ENEMY_YAW2)>0x7fff) ? (((RX_ENEMY_YAW1<<8)|RX_ENEMY_YAW2)-0xffff) : (RX_ENEMY_YAW1<<8)|RX_ENEMY_YAW2 )*k_angle;
-		aim.pitch=-(float)((((RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2)>0x7fff) ? (((RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2)-0xffff) : (RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2 )*k_angle;
+		aim.yaw=YAW_DIR*(float)((((RX_ENEMY_YAW1<<8)|RX_ENEMY_YAW2)>0x7fff) ? (((RX_ENEMY_YAW1<<8)|RX_ENEMY_YAW2)-0xffff) : (RX_ENEMY_YAW1<<8)|RX_ENEMY_YAW2 )*k_angle;
+		aim.pitch=-PIT_DIR*(float)((((RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2)>0x7fff) ? (((RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2)-0xffff) : (RX_ENEMY_PITCH1<<8)|RX_ENEMY_PITCH2 )*k_angle;
 		enemy_dist=(float)((RX_ENEMY_DIS1<<8)|RX_ENEMY_DIS2)*k_distance;
 		
 		find_enemy = 1;
@@ -350,10 +350,7 @@ void AutoAimUartTxInfo()
 	data[3] = 0;
 	data[4] = '\n';
 	
-	//if(tx_free)
-	{
-		freq_div(HAL_UART_Transmit_DMA(&AUTOAIM_UART, (uint8_t*)&data, sizeof(data)),5);
-	}
+	freq_div(if(HAL_UART_Transmit_DMA(&AUTOAIM_UART, (uint8_t*)&data, sizeof(data)) != HAL_OK){Error_Handler();}, 10);
 }
 
 //×ÔÃéÖ¡ÂÊ¼ì²â
