@@ -17,10 +17,8 @@ uint16_t prepare_time = 0;
 uint16_t counter = 0;
 uint8_t	no_signal = 0;
 uint16_t IWDG_counter = 0;
-};
 float rotate_speed = 0;
-float rotate_speed_real = 0;
-fw_PID_Regulator_t chassis_rotate_pid = fw_PID_INIT(9.0f,0.1f,3.0f, 3000.0, 3000.0, 3000.0, 1500.0);//Todo:ki
+fw_PID_Regulator_t chassis_rotate_pid = fw_PID_INIT(9.0f, 0.1f, 3.0f, 3000.0, 3000.0, 3000.0, 1500.0);//Todo:ki
 
 MusicNote SuperMario[] = {
 	{H3, 100}, {0, 50}, 

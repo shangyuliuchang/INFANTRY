@@ -24,7 +24,7 @@
 //启用电容的版本,请务必与车上的硬件版本相一致
 //#define USE_CAP1
 //#define USE_CAP2
-#define USE_CAPex
+#define USE_CAP3
 
 //各版本下启用运行模式
 #ifdef USE_CAP1
@@ -46,6 +46,10 @@
   #define CAP_FINAL_TEST
 #endif /* USE_CAPex */
 
+#ifdef USE_CAP3
+  //#define CAP_DEBUG
+  #define CAP_LED_SHOW
+#endif /* USE_CAP3 */
 //Program Begin!
 
 #define ADC_CHANNALS            (4)
@@ -149,6 +153,19 @@
 																							
   double FUNC_NEW_Get_Voltage(void);
 #endif /* USE_CAPex */
+	
+#ifdef USE_CAP3
+	#define AIM_POWER (70)
+	#define Cap_MOS_1_GPIO_PORT GPIOE
+	#define Cap_MOS_2_GPIO_PORT GPIOC
+	
+	#define VAL_POWER_Voltage (((ADC_val[1]*3.3*11)/4095)<=10)?((ADC_val[1]*3.3*11)/4095):10				//PB0
+	#define VAL_CAP_Voltage		ADC_val[2]*3.3*11/4095							//PB1
+	#define VAL_POWER_CUR AIM_POWER*0.95/VAL_CAP_Voltage
+	#define DAC_OUT		((70-VAL_POWER_CUR*VAL_POWER_Voltage)/VAL_CAP_Voltage*0.01*51-0.125)/5
+	
+static uint16_t mos[4]={GPIO_PIN_12,GPIO_PIN_6,GPIO_PIN_2,GPIO_PIN_3};
+#endif /* USE_CAP3 */
 
 static int16_t ADC_hits_val[ADC_HITS][ADC_CHANNALS];
 static int32_t ADC_tmp[ADC_CHANNALS];
@@ -191,8 +208,18 @@ static void Cap_Ctr(void);
 #endif /* CAP_DEBUG */
 
 void Cap_Init(void) {
+	#ifdef USE_CAP3
+	HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_SET);
+	HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+	
+	HAL_DAC_SetValue(&hdac,DAC1_CHANNEL_1,DAC_ALIGN_12B_R,0);
+	HAL_DAC_Start(&hdac,DAC1_CHANNEL_1);
+	#else
 	HAL_GPIO_WritePin(Cap_In_GPIO_Port, Cap_In_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(Cap_Out_GPIO_Port, Cap_Out_Pin, GPIO_PIN_RESET);
+	#endif /* USE_CAP3 */
 	memset(ADC_hits_val, 0, sizeof(ADC_hits_val));
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC_hits_val, ADC_CHANNALS*ADC_HITS);
 	#ifdef USE_CAP2
@@ -233,10 +260,12 @@ void Cap_Init(void) {
 #endif /* USE_CAPex */
 
 void Cap_Run(void) {
+	#ifdef USE_CAPex
 	VAL__CAP_VOLTAGE = FUNC_NEW_Get_Voltage() * 35.2 / 2.2;
 	Control_SuperCap.C_voltage = 100*Cap_Get_Cap_Voltage();
 	Control_SuperCap.P_voltage = 100*Cap_Get_Power_Voltage();
 	Control_SuperCap.P_Power = 100*Cap_Get_Power_Voltage()*Cap_Get_Power_CURR(); //
+	#endif /* USE_CAPex */
 	#ifdef CAP_LED_SHOW
 	  LED_Show_SuperCap_Voltage(1);
 	#endif /* CAP_LED_SHOW */
@@ -266,6 +295,12 @@ void Cap_State_Switch(cap_state State) {
 		      HAL_GPIO_WritePin(Cap_Out_GPIO_Port, Cap_Out_Pin, GPIO_PIN_RESET);
     #endif /* USE_CAPex */
 		
+		#ifdef USE_CAP3
+					HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+		#endif /* USE_CAP3 */
 		break;
 	case CAP_STATE_RELEASE:
 		#ifdef USE_CAP1
@@ -291,6 +326,12 @@ void Cap_State_Switch(cap_state State) {
 		      HAL_GPIO_WritePin(Cap_Out_GPIO_Port, Cap_Out_Pin, GPIO_PIN_SET);
     #endif /* USE_CAPex */
 		
+		#ifdef USE_CAP3
+					HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_SET);
+					HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_SET);
+					HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+		#endif /* USE_CAP3 */
 		break;
 	case CAP_STATE_RECHARGE:
 		#ifdef USE_CAP1
@@ -322,37 +363,78 @@ void Cap_State_Switch(cap_state State) {
     #endif /* USE_CAPex */
 		
 		break;
+	#ifdef USE_CAP3
+	
+	case CAP_STATE_BOOST:
+			CapState=CAP_STATE_BOOST;
+			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_SET);
+			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_SET);
+			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+		break;
+	
+	case CAP_STATE_EMERGENCY:
+			CapState=CAP_STATE_EMERGENCY;
+			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_SET);
+			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+		break;
+	
+	case CAP_STATE_PREPARE:
+			CapState=CAP_STATE_PREPARE;
+			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_SET);
+			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+		break;
+	
+	#endif /* USE_CAP3 */
 	}
 }
 
 double Cap_Get_Cap_Voltage(void) {
+	#ifdef USE_CAP3
+		return VAL_CAP_Voltage;
+		#else
 	#ifndef BOARD_MAIN
 	  return VAL__CAP_VOLTAGE;
 	#else
 		return rx_cap_voltage;
 	#endif 
+	#endif
 }
 
 
 double Cap_Get_Power_Voltage(void){
+	#ifdef USE_CAP3
+		return VAL_POWER_Voltage;
+		#else
 	#ifndef BOARD_MAIN
 		return VAL__CAP_Power_Voltage;
 	#else
 		return rx_power_voltage;
 	#endif 	
+	#endif
 }
 
 double Cap_Get_Power_CURR(void){
+	#ifdef USE_CAP3
+		return VAL_POWER_CUR;
+		#else
 	#ifndef BOARD_MAIN
 		return VAL__CAP_Power_CURR;
 	#else
 		return rx_power_current;
 	#endif
+	#endif
 }
 
+//#endif /* USE_CAPex */
 cap_state Cap_Get_Cap_State(void) {
 	return CapState;
 }
+
 
 /**
   * @brief  Set the pwm compare or dac output according to the state.
@@ -370,7 +452,7 @@ void Cap_State() { // called with period of 2 ms
 	  #ifdef USE_CAPex
 		  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0);
 		  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 4095);//
-	  #endif /* USE_CAPex */
+	  #endif /* USE_CAPex */ 
 		break;
 	case CAP_STATE_RECHARGE:
 		#ifdef USE_CAP2 
@@ -415,6 +497,21 @@ void Cap_State() { // called with period of 2 ms
 	  #endif /* USE_CAPex */
 	
 		break;
+	#ifdef USE_CAP3
+	
+	case CAP_STATE_BOOST:
+		HAL_DAC_SetValue(&hdac,	DAC1_CHANNEL_1,	DAC_ALIGN_12B_R,	DAC_OUT);
+		break;
+	
+	case CAP_STATE_EMERGENCY:
+		HAL_DAC_SetValue(&hdac,	DAC1_CHANNEL_1,	DAC_ALIGN_12B_R,	DAC_OUT);
+		break;
+	
+	case CAP_STATE_PREPARE:
+		HAL_DAC_SetValue(&hdac,	DAC1_CHANNEL_1,	DAC_ALIGN_12B_R,	DAC_OUT);
+		break;
+	
+	#endif /* USE_CAP3 */
 	}
 }
 
@@ -459,9 +556,11 @@ static void Cap_Ctr_STOP() {
     #endif /* CAP_DEBUG */
 		
   #endif /*CAP_AUTO_RECHARGE */
-	return;
-		
 	
+	#ifdef USE_CAP3
+	HAL_DAC_SetValue(&hdac,	DAC1_CHANNEL_1,	DAC_ALIGN_12B_R,	0);
+	#endif /* USE_CAP3 */
+	return;
 	
 }
 
@@ -661,8 +760,51 @@ static void Cap_Ctr_RELEASE() {
 			  }
 		  #endif /* CAP_FINAL_TEST */
 	#endif /* USE_CAPex */
+
+	#ifdef USE_CAP3
+		if(VAL_POWER_Voltage<10)
+		{
+			Cap_State_Switch(CAP_STATE_STOP);
+		}
+		else
+		{
+			if(VAL_CAP_Voltage<12)
+				Cap_State_Switch(CAP_STATE_EMERGENCY);
+			else if(VAL_CAP_Voltage<24)
+				Cap_State_Switch(CAP_STATE_BOOST);
+		}
+	#endif /* USE_CAP3 */
 }
 
+#ifdef USE_CAP3
+static void Cap_Ctr_BOOST(){
+	if(VAL_POWER_Voltage<10)
+		{
+			Cap_State_Switch(CAP_STATE_STOP);
+		}
+		else
+		{
+			if(VAL_CAP_Voltage<12)
+				Cap_State_Switch(CAP_STATE_EMERGENCY);
+			else if(VAL_CAP_Voltage>24)
+				Cap_State_Switch(CAP_STATE_RELEASE);
+		}
+}
+
+static void Cap_Ctr_EMERGENCY(){
+	if(VAL_POWER_Voltage<10)
+		{
+			Cap_State_Switch(CAP_STATE_STOP);
+		}
+}
+
+static void Cap_Ctr_PREPARE(){
+	if(VAL_CAP_Voltage>20)
+	{
+		Cap_State_Switch(CAP_STATE_RELEASE);
+	}
+}
+#endif /* USE_CAP3 */
 /**
   * @brief  Control the release and recharge progress.
   * @param  None
@@ -692,7 +834,19 @@ void Cap_Ctr() { // called with period of 2 ms
 			break;
 		case CAP_STATE_TEMP_RECHARGE:
 			Cap_Ctr_TEMP_RECHARGE();
-			break;	
+			break;
+		#ifdef USE_CAP3
+		
+		case CAP_STATE_EMERGENCY:
+			Cap_Ctr_EMERGENCY();
+			break;
+		case CAP_STATE_BOOST:
+			Cap_Ctr_BOOST();
+			break;
+		case CAP_STATE_PREPARE:
+			Cap_Ctr_PREPARE();
+			break;
+		#endif
 		}
 	}
 	cap_check = Cap_Get_Cap_State();
