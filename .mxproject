@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=C:/Users/Steve_Tree/Desktop/RM/RM_Infantry_2020/Inc
+HeaderPath=E:/project/rm2020/keil/INFANTRY/RM_Infantry_2020/Inc
 HeaderFiles=gpio.h;can.h;dma.h;spi.h;usart.h;stm32f4xx_it.h;stm32f4xx_hal_conf.h;main.h;tim.h;adc.h;iwdg.h;dac.h;
-SourcePath=C:/Users/Steve_Tree/Desktop/RM/RM_Infantry_2020/Src
+SourcePath=E:/project/rm2020/keil/INFANTRY/RM_Infantry_2020/Src
 SourceFiles=gpio.c;can.c;dma.c;spi.c;usart.c;stm32f4xx_it.c;stm32f4xx_hal_msp.c;main.c;tim.c;adc.c;iwdg.c;dac.c;
 
 [PreviousLibFiles]

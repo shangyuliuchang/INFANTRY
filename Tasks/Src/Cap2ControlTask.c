@@ -159,10 +159,10 @@
 	#define Cap_MOS_1_GPIO_PORT GPIOE
 	#define Cap_MOS_2_GPIO_PORT GPIOC
 	
-	#define VAL_POWER_Voltage (((ADC_val[1]*3.3*11)/4095)<=10)?((ADC_val[1]*3.3*11)/4095):10				//PB0
+	#define VAL_POWER_Voltage (ADC_val[1]*3.3*11)/4095			//PB0
 	#define VAL_CAP_Voltage		ADC_val[2]*3.3*11/4095							//PB1
-	#define VAL_POWER_CUR AIM_POWER*0.95/VAL_CAP_Voltage
-	#define DAC_OUT		((70-VAL_POWER_CUR*VAL_POWER_Voltage)/VAL_CAP_Voltage*0.01*51-0.125)/5
+	#define VAL_POWER_CUR (VAL_CAP_Voltage>0?AIM_POWER*0.95/VAL_CAP_Voltage:10)<=10?(VAL_CAP_Voltage>0?AIM_POWER*0.95/VAL_CAP_Voltage:10):10
+	#define DAC_OUT		VAL_POWER_CUR*4095/3.3/5
 	
 static uint16_t mos[4]={GPIO_PIN_12,GPIO_PIN_6,GPIO_PIN_2,GPIO_PIN_3};
 #endif /* USE_CAP3 */
@@ -209,10 +209,10 @@ static void Cap_Ctr(void);
 
 void Cap_Init(void) {
 	#ifdef USE_CAP3
-	HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_SET);
+	HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+	//HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
 	
 	HAL_DAC_SetValue(&hdac,DAC1_CHANNEL_1,DAC_ALIGN_12B_R,0);
 	HAL_DAC_Start(&hdac,DAC1_CHANNEL_1);
@@ -328,9 +328,9 @@ void Cap_State_Switch(cap_state State) {
 		
 		#ifdef USE_CAP3
 					HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_SET);
-					HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
-					HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_SET);
-					HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_SET);
+					HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
+					//HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
 		#endif /* USE_CAP3 */
 		break;
 	case CAP_STATE_RECHARGE:
@@ -370,7 +370,7 @@ void Cap_State_Switch(cap_state State) {
 			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_SET);
 			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_SET);
 			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+			//HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
 		break;
 	
 	case CAP_STATE_EMERGENCY:
@@ -378,15 +378,15 @@ void Cap_State_Switch(cap_state State) {
 			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_SET);
-			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+			//HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
 		break;
 	
 	case CAP_STATE_PREPARE:
 			CapState=CAP_STATE_PREPARE;
-			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_SET);
+			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+			//HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
 		break;
 	
 	#endif /* USE_CAP3 */
@@ -453,6 +453,11 @@ void Cap_State() { // called with period of 2 ms
 		  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0);
 		  HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 4095);//
 	  #endif /* USE_CAPex */ 
+		#ifdef USE_CAP3
+		HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
+		#endif /*USE_CAP3*/
 		break;
 	case CAP_STATE_RECHARGE:
 		#ifdef USE_CAP2 
@@ -487,6 +492,9 @@ void Cap_State() { // called with period of 2 ms
 			}
 				
 	  #endif /* USE_CAPex */
+		#ifdef USE_CAP3
+			HAL_DAC_SetValue(&hdac,	DAC1_CHANNEL_1,	DAC_ALIGN_12B_R,	DAC_OUT);
+		#endif
 		break;
 			
 	case CAP_STATE_TEMP_RECHARGE:
@@ -504,7 +512,7 @@ void Cap_State() { // called with period of 2 ms
 		break;
 	
 	case CAP_STATE_EMERGENCY:
-		HAL_DAC_SetValue(&hdac,	DAC1_CHANNEL_1,	DAC_ALIGN_12B_R,	DAC_OUT);
+		HAL_DAC_SetValue(&hdac,	DAC1_CHANNEL_1,	DAC_ALIGN_12B_R,	0);
 		break;
 	
 	case CAP_STATE_PREPARE:
@@ -559,6 +567,9 @@ static void Cap_Ctr_STOP() {
 	
 	#ifdef USE_CAP3
 	HAL_DAC_SetValue(&hdac,	DAC1_CHANNEL_1,	DAC_ALIGN_12B_R,	0);
+	if(VAL_POWER_Voltage>10){
+		Cap_State_Switch(CAP_STATE_PREPARE);
+	}
 	#endif /* USE_CAP3 */
 	return;
 	
@@ -762,7 +773,7 @@ static void Cap_Ctr_RELEASE() {
 	#endif /* USE_CAPex */
 
 	#ifdef USE_CAP3
-		if(VAL_POWER_Voltage<10)
+		if(VAL_POWER_Voltage<9)
 		{
 			Cap_State_Switch(CAP_STATE_STOP);
 		}
@@ -770,8 +781,8 @@ static void Cap_Ctr_RELEASE() {
 		{
 			if(VAL_CAP_Voltage<12)
 				Cap_State_Switch(CAP_STATE_EMERGENCY);
-			else if(VAL_CAP_Voltage<24)
-				Cap_State_Switch(CAP_STATE_BOOST);
+			//else if(VAL_CAP_Voltage<24)
+				//Cap_State_Switch(CAP_STATE_BOOST);
 		}
 	#endif /* USE_CAP3 */
 }
@@ -792,14 +803,16 @@ static void Cap_Ctr_BOOST(){
 }
 
 static void Cap_Ctr_EMERGENCY(){
-	if(VAL_POWER_Voltage<10)
+	if(VAL_POWER_Voltage<9)
 		{
 			Cap_State_Switch(CAP_STATE_STOP);
 		}
 }
 
 static void Cap_Ctr_PREPARE(){
-	if(VAL_CAP_Voltage>20)
+	if(VAL_POWER_Voltage<9){
+		Cap_State_Switch(CAP_STATE_STOP);
+	}else if(VAL_CAP_Voltage>15)
 	{
 		Cap_State_Switch(CAP_STATE_RELEASE);
 	}
