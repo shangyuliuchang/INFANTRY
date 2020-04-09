@@ -70,7 +70,7 @@ void SystemClock_Config(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+int flag=0;
 /* USER CODE END 0 */
 
 int main(void)
@@ -120,7 +120,7 @@ int main(void)
   MX_TIM7_Init();
   MX_TIM10_Init();
   MX_TIM2_Init();
-  MX_IWDG_Init();
+  //MX_IWDG_Init();
   MX_TIM5_Init();
   MX_USART3_UART_Init();
   MX_UART7_Init();

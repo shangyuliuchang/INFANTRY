@@ -38,6 +38,8 @@ extern uint8_t cap_move_state;
 extern double rx_cap_voltage;
 extern double rx_power_voltage;
 extern double rx_power_current;
+extern cap_state CapState;
+extern int16_t ADC_val[];
 
 /*********************************************************
   * @brief  Initialize the capacitance controller.

@@ -32,8 +32,8 @@
 #endif
 
 #define USE_AUTOAIM
-#define USE_IMU
-#define USE_CHASSIS_FOLLOW
+//#define USE_IMU
+//#define USE_CHASSIS_FOLLOW
 #define USE_HEAT_LIMIT
 #define USE_POWERLIMITATION
 #define USE_CHASSIS_ADJUST
@@ -41,8 +41,8 @@
 
 #ifdef INFANTRY
 	#define CAN11
-	#define CAN12
-	#define CAN21
+	//#define CAN12
+	//#define CAN21
 	//#define CAN22
 #endif
 

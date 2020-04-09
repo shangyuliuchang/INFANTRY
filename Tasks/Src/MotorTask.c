@@ -127,12 +127,12 @@ void ControlCM(MotorINFO* id)
 void ControlGMY(MotorINFO* id)
 {
 	if(id==0) return;
-
+	
+	static	uint8_t	ChassisLockRCD = 0;
 	#ifdef USE_CHASSIS_FOLLOW
 		#ifndef USE_GIMBAL_ENCODER
 			float 	ThisAngle = -imu.yaw;
 			float 	ThisSpeed = imu.wz;
-			static	uint8_t	ChassisLockRCD = 0;
 			if(chassis_lock)
 			{
 				ThisAngle = - (float)(GM_YAW_ZERO - id->RxMsgC6x0.angle) * 360.0f / 8192.0f;
@@ -192,12 +192,12 @@ void ControlGMY(MotorINFO* id)
 void ControlGMP(MotorINFO* id)
 {
 	if(id==0) return;
-
+	
+	static	uint8_t	ChassisLockRCD = 0;
 	#ifdef USE_CHASSIS_FOLLOW
 		#ifndef USE_GIMBAL_ENCODER
 			float 	ThisAngle = imu.pit;
 			float 	ThisSpeed = -imu.wy;
-			static	uint8_t	ChassisLockRCD = 0;
 			if(chassis_lock)
 			{
 				ThisAngle = - (float)(GM_PITCH_ZERO - id->RxMsgC6x0.angle) * 360.0f / 8192.0f;
@@ -208,6 +208,7 @@ void ControlGMP(MotorINFO* id)
 		#endif
 	#else
 		double 	ThisAngle = - (double)(GM_PITCH_ZERO - id->RxMsgC6x0.angle) * 360.0f / 8192.0f;
+		float 	ThisSpeed = -imu.wy;
 	#endif
 	int8_t 	dir;
 	if(id->ReductionRate>=0) dir=1;

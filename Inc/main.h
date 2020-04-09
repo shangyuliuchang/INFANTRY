@@ -103,6 +103,8 @@
 #define DISABLE_DC24V_3() HAL_GPIO_WritePin(DC24V_3_GPIO_Port, DC24V_3_Pin, GPIO_PIN_RESET)
 #define DISABLE_DC24V_4() HAL_GPIO_WritePin(DC24V_4_GPIO_Port, DC24V_4_Pin, GPIO_PIN_RESET)
 #define DISABLE_DC24V_5() HAL_GPIO_WritePin(DC24V_5_GPIO_Port, DC24V_5_Pin, GPIO_PIN_RESET)
+
+extern int flag;
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
