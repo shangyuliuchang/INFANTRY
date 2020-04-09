@@ -40,6 +40,7 @@ extern double rx_power_voltage;
 extern double rx_power_current;
 extern cap_state CapState;
 extern int16_t ADC_val[];
+extern float Iset;
 
 /*********************************************************
   * @brief  Initialize the capacitance controller.

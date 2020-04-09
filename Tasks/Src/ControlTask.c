@@ -74,7 +74,7 @@ void WorkStateFSM(void)
 			if(prepare_time < 500) prepare_time++;
 			if(prepare_time >= 500 && imu.InitFinish == 1 && isCan11FirstRx == 1 && isCan12FirstRx == 1 && isCan21FirstRx == 1 && isCan22FirstRx == 1)//imu初始化完成且所有can电机上电完成后进入正常模式
 			{
-				playMusicSuperMario();
+				//playMusicSuperMario();
 				chassis_rotate_pid.Reset(&chassis_rotate_pid);
 				WorkState = NORMAL_STATE;
 				#ifdef BOARD_SLAVE

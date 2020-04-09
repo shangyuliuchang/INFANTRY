@@ -162,18 +162,19 @@
 	#define VAL_POWER_Voltage    ((ADC_val[1]*3.3*11)/4095)//PB0
 	#define VAL_CAP_Voltage		   (ADC_val[2]*3.3*11/4095)							//PB1
 	#define VAL_POWER_CUR        ((VAL_CAP_Voltage>0?AIM_POWER*0.95/VAL_CAP_Voltage:10)<=10?(VAL_CAP_Voltage>0?AIM_POWER*0.95/VAL_CAP_Voltage:10):10)
-	#define DAC_OUT		           (VAL_POWER_CUR*4095/3.3/5)
+	#define DAC_OUT		           (uint32_t)(VAL_POWER_CUR*4095/3.3/5)
 	
 static uint16_t mos[4]={GPIO_PIN_12,GPIO_PIN_6,GPIO_PIN_2,GPIO_PIN_3};
 #endif /* USE_CAP3 */
 
 static int16_t ADC_hits_val[ADC_HITS][ADC_CHANNALS];
 static int32_t ADC_tmp[ADC_CHANNALS];
-static int16_t ADC_val[ADC_CHANNALS];
+int16_t ADC_val[ADC_CHANNALS];
 uint8_t rlease_flag = 0;
 
-static cap_state CapState = CAP_STATE_STOP;
+cap_state CapState = CAP_STATE_STOP;
 CapControl_t Control_SuperCap = { 0,0 };
+float Iset=0;
 
 static void Cap_State(void);
 static void Cap_Ctr(void);
@@ -269,6 +270,7 @@ void Cap_Run(void) {
 	#ifdef CAP_LED_SHOW
 	  LED_Show_SuperCap_Voltage(1);
 	#endif /* CAP_LED_SHOW */
+	Iset=DAC_OUT;
 	Cap_Ctr();
 	Cap_State();
 	//custom_data.masks = 0xC0 | ((1 << ((int)(((VAL__CAP_VOLTAGE*VAL__CAP_VOLTAGE - 121) / (RECHARGE_VOLTAGE_MAX*RECHARGE_VOLTAGE_MAX - 121)) * 6 + 1))) - 1);
