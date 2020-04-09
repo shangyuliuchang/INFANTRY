@@ -192,7 +192,7 @@ void PowerLimitation(void)
 {
 	//无限功率模式判定
 	static uint16_t power_unlimit_cnt = 0;
-	if(RefereeData.PowerHeat.chassis_power_buffer != 0)
+	if(RefereeData.PowerHeat.chassis_power_buffer != 0 || JUDGE_State==OFFLINE)
 	{
 		power_unlimit_cnt = 0;
 		power_unlimit = 0;

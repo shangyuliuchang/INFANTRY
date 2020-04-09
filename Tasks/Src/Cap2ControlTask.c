@@ -155,14 +155,14 @@
 #endif /* USE_CAPex */
 	
 #ifdef USE_CAP3
-	#define AIM_POWER (70)
-	#define Cap_MOS_1_GPIO_PORT GPIOE
-	#define Cap_MOS_2_GPIO_PORT GPIOC
+	#define AIM_POWER            (JUDGE_State == OFFLINE?(80):(80))
+	#define Cap_MOS_1_GPIO_PORT  GPIOE
+	#define Cap_MOS_2_GPIO_PORT  GPIOC
 	
-	#define VAL_POWER_Voltage (ADC_val[1]*3.3*11)/4095			//PB0
-	#define VAL_CAP_Voltage		ADC_val[2]*3.3*11/4095							//PB1
-	#define VAL_POWER_CUR (VAL_CAP_Voltage>0?AIM_POWER*0.95/VAL_CAP_Voltage:10)<=10?(VAL_CAP_Voltage>0?AIM_POWER*0.95/VAL_CAP_Voltage:10):10
-	#define DAC_OUT		VAL_POWER_CUR*4095/3.3/5
+	#define VAL_POWER_Voltage    ((ADC_val[1]*3.3*11)/4095)//PB0
+	#define VAL_CAP_Voltage		   (ADC_val[2]*3.3*11/4095)							//PB1
+	#define VAL_POWER_CUR        ((VAL_CAP_Voltage>0?AIM_POWER*0.95/VAL_CAP_Voltage:10)<=10?(VAL_CAP_Voltage>0?AIM_POWER*0.95/VAL_CAP_Voltage:10):10)
+	#define DAC_OUT		           (VAL_POWER_CUR*4095/3.3/5)
 	
 static uint16_t mos[4]={GPIO_PIN_12,GPIO_PIN_6,GPIO_PIN_2,GPIO_PIN_3};
 #endif /* USE_CAP3 */
@@ -296,6 +296,7 @@ void Cap_State_Switch(cap_state State) {
     #endif /* USE_CAPex */
 		
 		#ifdef USE_CAP3
+					CapState = CAP_STATE_STOP;
 					HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_RESET);
 					HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
 					HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
@@ -327,6 +328,7 @@ void Cap_State_Switch(cap_state State) {
     #endif /* USE_CAPex */
 		
 		#ifdef USE_CAP3
+					CapState = CAP_STATE_RELEASE;
 					HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_SET);
 					HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_SET);
 					HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
@@ -494,7 +496,7 @@ void Cap_State() { // called with period of 2 ms
 	  #endif /* USE_CAPex */
 		#ifdef USE_CAP3
 			HAL_DAC_SetValue(&hdac,	DAC1_CHANNEL_1,	DAC_ALIGN_12B_R,	DAC_OUT);
-		#endif
+		#endif /*USE_CAP3*/
 		break;
 			
 	case CAP_STATE_TEMP_RECHARGE:
