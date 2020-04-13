@@ -12,6 +12,7 @@
 #include "includes.h"
 
 //µ×ÅÌµç»úpid
+//default:16 0 2
 #define CHASSIS_MOTOR_SPEED_PID_DEFAULT \
 {\
 	0,0,{0,0},\

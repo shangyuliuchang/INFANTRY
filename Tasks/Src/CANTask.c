@@ -168,6 +168,7 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan){
 				default: RxWorkState=STOP_STATE; break;
 			}
 			if(RxWorkState == STOP_STATE || RxWorkState == PREPARE_STATE) WorkState = RxWorkState;
+			#ifndef USE_CAP3
 			switch(Can1RxMsg.Data[1])
 			{
 				case 0xff:
@@ -193,7 +194,7 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan){
 				}break;
 				default: break;
 			}
-			
+			#endif
 			cap_move_state = Can1RxMsg.Data[2];
 			#endif
 		}
@@ -334,7 +335,7 @@ void CANTxInfo(CAN_HandleTypeDef* hcan)
 	hcan->pTxMsg->Data[5] = 0;
 	hcan->pTxMsg->Data[6] = 0;
 	hcan->pTxMsg->Data[7] = 0;
-	#endif
+	#endif //BOARD_MAIN
 	
 	#ifdef BOARD_SLAVE
 	hcan->pTxMsg->StdId = 0x301;	//标头为0x301，注意检查是否配对及有无冲突情况
@@ -352,7 +353,7 @@ void CANTxInfo(CAN_HandleTypeDef* hcan)
 	hcan->pTxMsg->Data[5] = 0;
 	hcan->pTxMsg->Data[6] = 0;
 	hcan->pTxMsg->Data[7] = 0;
-	#endif
+	#endif //BOARD_SLAVE
 
 	#ifdef DOUBLE_BOARD_CAN1
 	if(can1_update == 1 && can1_type == 3)
@@ -382,7 +383,7 @@ void CANTxInfo(CAN_HandleTypeDef* hcan)
 		HAL_NVIC_EnableIRQ(TIM7_IRQn);
 		HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
 	}
-	#endif
+	#endif //DOUBLE_BOARD_CAN1
 	
 	#ifdef DOUBLE_BOARD_CAN2
 	if(can2_update == 1 && can2_type == 3)
@@ -412,7 +413,7 @@ void CANTxInfo(CAN_HandleTypeDef* hcan)
 		HAL_NVIC_EnableIRQ(TIM7_IRQn);
 		HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
 	}
-	#endif
+	#endif //DOUBLE_BOARD_CAN2
 }
 
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)

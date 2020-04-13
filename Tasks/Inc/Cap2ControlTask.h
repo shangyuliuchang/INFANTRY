@@ -42,6 +42,8 @@ extern cap_state CapState;
 extern int16_t ADC_val[];
 extern float Iset;
 
+extern int disableInput;
+
 /*********************************************************
   * @brief  Initialize the capacitance controller.
   * @param  None
@@ -84,5 +86,6 @@ cap_state Cap_Get_Cap_State(void);
 
 void LED_Show_SuperCap_Voltage(uint8_t flag);
 uint8_t Client_Show_SuperCap_Voltage(void);
+float Cap_Get_Aim_Power(void);
 
 #endif /* __CAP_2_CONTROL_TASK__ */

@@ -86,7 +86,26 @@ void No_Cap_PowerLimitation(void)
 	CMBL.Intensity = CMBLIntensity;
 	CMBR.Intensity = CMBRIntensity;
 }
-
+void Cap3Based_PowerLimitation(void){
+	int16_t CMFLIntensity = CMFL.Intensity;
+	int16_t CMFRIntensity = CMFR.Intensity;
+	int16_t CMBLIntensity = CMBL.Intensity;
+	int16_t CMBRIntensity = CMBR.Intensity;
+	int32_t IntensityMax = Cap_Get_Aim_Power()*0.8f*2000.0f/Cap_Get_Power_Voltage();
+	int32_t IntensitySum = __fabs(CMFLIntensity) + __fabs(CMFRIntensity) + __fabs(CMBLIntensity) + __fabs(CMBRIntensity);
+	if(IntensitySum > IntensityMax){
+		if(Cap_Get_Cap_State()==CAP_STATE_RELEASE || Cap_Get_Cap_Voltage()<15){
+			CMFLIntensity = CMFLIntensity * IntensityMax / IntensitySum;
+			CMBLIntensity = CMBLIntensity * IntensityMax / IntensitySum;
+			CMBRIntensity = CMBRIntensity * IntensityMax / IntensitySum;
+			CMFRIntensity = CMFRIntensity * IntensityMax / IntensitySum;
+		}
+	}
+	CMFL.Intensity = CMFLIntensity;
+	CMBL.Intensity = CMBLIntensity;
+	CMBR.Intensity = CMBRIntensity;
+	CMFR.Intensity = CMFRIntensity;
+}
 
 //用于常态的基于自检测功率的功率限制
 void CurBased_PowerLimitation(void)
@@ -192,7 +211,7 @@ void PowerLimitation(void)
 {
 	//无限功率模式判定
 	static uint16_t power_unlimit_cnt = 0;
-	if(RefereeData.PowerHeat.chassis_power_buffer != 0 || JUDGE_State==OFFLINE)
+	if(RefereeData.PowerHeat.chassis_power_buffer != 0)
 	{
 		power_unlimit_cnt = 0;
 		power_unlimit = 0;
@@ -226,6 +245,10 @@ void PowerLimitation(void)
 //					CapBased_PowerLimitation();//超级电容工作模式下的功率限制
 //			}
 //		}
+		#ifdef USE_CAP3
+		Cap3Based_PowerLimitation();
+		#else
 		No_Cap_PowerLimitation(); //无电容的功率限制
+		#endif
 	}
 }

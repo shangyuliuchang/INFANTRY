@@ -24,7 +24,7 @@
 //启用电容的版本,请务必与车上的硬件版本相一致
 //#define USE_CAP1
 //#define USE_CAP2
-#define USE_CAP3
+
 
 //各版本下启用运行模式
 #ifdef USE_CAP1
@@ -155,14 +155,16 @@
 #endif /* USE_CAPex */
 	
 #ifdef USE_CAP3
-	#define AIM_POWER            (JUDGE_State == OFFLINE?(80):(80))
+	#define AIM_POWER            (JUDGE_State == OFFLINE?(80.0f):(80.0f))
 	#define Cap_MOS_1_GPIO_PORT  GPIOE
 	#define Cap_MOS_2_GPIO_PORT  GPIOC
 	
-	#define VAL_POWER_Voltage    ((ADC_val[1]*3.3*11)/4095)//PB0
-	#define VAL_CAP_Voltage		   (ADC_val[2]*3.3*11/4095)							//PB1
-	#define VAL_POWER_CUR        ((VAL_CAP_Voltage>0?AIM_POWER*0.95/VAL_CAP_Voltage:10)<=10?(VAL_CAP_Voltage>0?AIM_POWER*0.95/VAL_CAP_Voltage:10):10)
-	#define DAC_OUT		           (uint32_t)(VAL_POWER_CUR*4095/3.3/5)
+	#define VAL_POWER_Voltage    (((float)ADC_val[1]*3.3f*11.0f)/4095.0f)//PB0
+	#define VAL_CAP_Voltage		   ((float)ADC_val[2]*3.3f*11.0f/4095.0f)							//PB1
+	#define VAL_POWER_CUR        ((VAL_CAP_Voltage>0.0f?AIM_POWER*0.95f/VAL_CAP_Voltage:10.0f)<=10.0f?(VAL_CAP_Voltage>0.0f?AIM_POWER*0.95f/VAL_CAP_Voltage:10.0f):10.0f)
+	#define DAC_OUT		           (uint32_t)(VAL_POWER_CUR*4095.0f/3.3f/5.0f)
+	
+	int disableInput=0;
 	
 static uint16_t mos[4]={GPIO_PIN_12,GPIO_PIN_6,GPIO_PIN_2,GPIO_PIN_3};
 #endif /* USE_CAP3 */
@@ -213,10 +215,10 @@ void Cap_Init(void) {
 	HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[0],GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(Cap_MOS_1_GPIO_PORT,mos[1],GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[2],GPIO_PIN_RESET);
-	//HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(Cap_MOS_2_GPIO_PORT,mos[3],GPIO_PIN_RESET);
 	
 	HAL_DAC_SetValue(&hdac,DAC1_CHANNEL_1,DAC_ALIGN_12B_R,0);
-	HAL_DAC_Start(&hdac,DAC1_CHANNEL_1);
+	HAL_DAC_Start(&hdac,DAC_CHANNEL_1);
 	#else
 	HAL_GPIO_WritePin(Cap_In_GPIO_Port, Cap_In_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(Cap_Out_GPIO_Port, Cap_Out_Pin, GPIO_PIN_RESET);
@@ -275,7 +277,9 @@ void Cap_Run(void) {
 	Cap_State();
 	//custom_data.masks = 0xC0 | ((1 << ((int)(((VAL__CAP_VOLTAGE*VAL__CAP_VOLTAGE - 121) / (RECHARGE_VOLTAGE_MAX*RECHARGE_VOLTAGE_MAX - 121)) * 6 + 1))) - 1);
 }
-
+float Cap_Get_Aim_Power(void){
+	return AIM_POWER;
+}
 void Cap_State_Switch(cap_state State) {
 	switch (State) {
 	case CAP_STATE_STOP:
@@ -497,7 +501,11 @@ void Cap_State() { // called with period of 2 ms
 				
 	  #endif /* USE_CAPex */
 		#ifdef USE_CAP3
-			HAL_DAC_SetValue(&hdac,	DAC1_CHANNEL_1,	DAC_ALIGN_12B_R,	DAC_OUT);
+			if(disableInput==0){
+				HAL_DAC_SetValue(&hdac,	DAC_CHANNEL_1,	DAC_ALIGN_12B_R,	DAC_OUT);
+			}else{
+				HAL_DAC_SetValue(&hdac,	DAC_CHANNEL_1,	DAC_ALIGN_12B_R,	0);
+			}
 		#endif /*USE_CAP3*/
 		break;
 			
@@ -783,8 +791,8 @@ static void Cap_Ctr_RELEASE() {
 		}
 		else
 		{
-			if(VAL_CAP_Voltage<12)
-				Cap_State_Switch(CAP_STATE_EMERGENCY);
+			//if(VAL_CAP_Voltage<12)
+				//Cap_State_Switch(CAP_STATE_EMERGENCY);
 			//else if(VAL_CAP_Voltage<24)
 				//Cap_State_Switch(CAP_STATE_BOOST);
 		}
@@ -834,7 +842,7 @@ void Cap_Ctr() { // called with period of 2 ms
 		Cap_State_Switch(CAP_STATE_STOP);
 	}
 	#else
-	if (RefereeData.GameRobotState.remain_HP < 1 || WorkState == STOP_STATE || WorkState == PREPARE_STATE) {
+	if ((RefereeData.GameRobotState.remain_HP < 1 && JUDGE_State==ONLINE) || WorkState == STOP_STATE /*|| WorkState == PREPARE_STATE*/) {
 		Cap_State_Switch(CAP_STATE_STOP);
 	}
 	#endif

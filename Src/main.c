@@ -70,7 +70,7 @@ void SystemClock_Config(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-int flag=0;
+
 /* USER CODE END 0 */
 
 int main(void)
