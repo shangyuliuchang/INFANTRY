@@ -168,34 +168,6 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan){
 				default: RxWorkState=STOP_STATE; break;
 			}
 			if(RxWorkState == STOP_STATE || RxWorkState == PREPARE_STATE) WorkState = RxWorkState;
-			#ifndef USE_CAP3
-			switch(Can1RxMsg.Data[1])
-			{
-				case 0xff:
-				{
-					if(Cap_Get_Cap_State() != CAP_STATE_STOP)
-					{
-						Cap_State_Switch(CAP_STATE_STOP);
-					}
-				}break;
-				case 0x00:
-				{
-					if(Cap_Get_Cap_State() != CAP_STATE_RECHARGE)
-					{
-						Cap_State_Switch(CAP_STATE_RECHARGE);
-					}
-				}break;
-				case 0x01:
-				{
-					if(Cap_Get_Cap_State() != CAP_STATE_RELEASE)
-					{
-						Cap_State_Switch(CAP_STATE_RELEASE);
-					}
-				}break;
-				default: break;
-			}
-			#endif //USE_CAP3
-			cap_move_state = Can1RxMsg.Data[2];
 			#endif
 		}
 		else if(Can1RxMsg.StdId==0x301)

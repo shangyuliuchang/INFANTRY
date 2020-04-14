@@ -18,23 +18,12 @@
 typedef enum {
 	CAP_STATE_EMERGENCY,
 	CAP_STATE_PREPARE,
-	CAP_STATE_BOOST,
 	CAP_STATE_STOP,
-	CAP_STATE_RECHARGE,
 	CAP_STATE_RELEASE,
-	CAP_STATE_TEMP_RECHARGE
 }cap_state;
 
-typedef __packed struct
-{
-	uint16_t P_voltage;
-	uint16_t P_Power;
-	uint16_t C_voltage;
-}CapControl_t;
 
-extern CapControl_t Control_SuperCap;
 extern uint8_t rlease_flag;
-extern uint8_t cap_move_state;
 extern double rx_cap_voltage;
 extern double rx_power_voltage;
 extern double rx_power_current;

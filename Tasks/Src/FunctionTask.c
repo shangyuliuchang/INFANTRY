@@ -92,7 +92,6 @@ int16_t channelrcol = 0;
 int16_t channellrow = 0;
 int16_t channellcol = 0;
 
-uint8_t TestMode = 0;
 uint8_t ShootState = 0;
 uint8_t ChassisTwistState = 0;
 int8_t ChassisTwistGapAngle = 0;
@@ -143,16 +142,7 @@ void RemoteControlProcess(Remote *rc)
 	channellcol = (rc->ch3 - (int16_t)REMOTE_CONTROLLER_STICK_OFFSET); 
 	
 	if(WorkState == NORMAL_STATE)
-	{
-		#ifndef USE_CAP3
-		if(LastState!= WorkState && Cap_Get_Cap_State() != CAP_STATE_STOP)
-		{
-			#ifndef BOARD_SLAVE
-			Cap_State_Switch(CAP_STATE_STOP);
-			#endif
-		}
-		#endif //USE_CAP3
-		
+	{		
 		ChassisSpeedRef.forward_back_ref = channelrcol * RC_CHASSIS_SPEED_REF;
 		ChassisSpeedRef.left_right_ref   = channelrrow * RC_CHASSIS_SPEED_REF/3*2;
 		#ifdef USE_CHASSIS_FOLLOW
@@ -172,15 +162,6 @@ void RemoteControlProcess(Remote *rc)
 	
 	if(WorkState == ADDITIONAL_STATE_ONE)
 	{
-		#ifndef USE_CAP3
-		if(LastState!= WorkState && Cap_Get_Cap_State() != CAP_STATE_RECHARGE)
-		{
-			#ifndef BOARD_SLAVE
-			Cap_State_Switch(CAP_STATE_RECHARGE);
-			#endif
-		}
-		#endif //USE_CAP3
-		
 		ChassisSpeedRef.forward_back_ref = channelrcol * RC_CHASSIS_SPEED_REF;
 		ChassisSpeedRef.left_right_ref   = channelrrow * RC_CHASSIS_SPEED_REF/3*2;
 		#ifdef USE_CHASSIS_FOLLOW
@@ -200,27 +181,8 @@ void RemoteControlProcess(Remote *rc)
 	
 	if(WorkState == ADDITIONAL_STATE_TWO)
 	{
-		#ifndef USE_CAP3
-		if(LastState!= WorkState && Cap_Get_Cap_State() != CAP_STATE_RELEASE && Cap_Get_Power_Voltage() > 11.5)
-		{
-			#ifndef BOARD_SLAVE
-			Cap_State_Switch(CAP_STATE_RELEASE);
-			#endif
-		}
-		#endif //USE_CAP3
-		
-		if (Cap_Get_Cap_Voltage() > 12 && Cap_Get_Cap_State() == CAP_STATE_RELEASE)
-		{
-		  ChassisSpeedRef.forward_back_ref = channelrcol * RC_CHASSIS_SPEED_REF*2;
-		  ChassisSpeedRef.left_right_ref   = channelrrow * RC_CHASSIS_SPEED_REF*1.5f;
-    }
-		else
-		{
-//			ChassisSpeedRef.forward_back_ref = channelrcol * RC_CHASSIS_SPEED_REF;
-//		  ChassisSpeedRef.left_right_ref   = channelrrow * RC_CHASSIS_SPEED_REF*3/2;
-			ChassisSpeedRef.forward_back_ref = channelrcol * RC_CHASSIS_SPEED_REF*2;
-		  ChassisSpeedRef.left_right_ref   = channelrrow * RC_CHASSIS_SPEED_REF*1.5f;
-		}
+		ChassisSpeedRef.forward_back_ref = channelrcol * RC_CHASSIS_SPEED_REF*2;
+		ChassisSpeedRef.left_right_ref   = channelrrow * RC_CHASSIS_SPEED_REF*1.5f;
 		#ifdef USE_CHASSIS_FOLLOW
 			GMY.TargetAngle += YAW_DIR * channellrow * RC_GIMBAL_SPEED_REF;
 			GMP.TargetAngle += PIT_DIR * channellcol * RC_GIMBAL_SPEED_REF;
@@ -522,7 +484,7 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 	LastState = WorkState;
 }
 
-KeyBoard_MoveMode KeyBoardMoveMode = MoveMode_CAP_RECHARGE_MODE;
+KeyBoard_MoveMode KeyBoardMoveMode = MoveMode_CAP_STOP_MODE;
 
 void KeyboardModeFSM(Key *key)
 {
@@ -543,40 +505,7 @@ void KeyboardModeFSM(Key *key)
 		KeyboardMode=NO_CHANGE;
 	}	
 	
-/*
-	SHIFT_CTRL
-	*/
-	/*
-	CTRL
-	*/
-	#ifndef USE_CAP3
-	if (KeyboardMode != LastKeyboardMode && KeyboardMode == SHIFT_CTRL)
-	{
-		if (KeyBoardMoveMode == MoveMode_CAP_STOP_MODE )
-		{
-			KeyBoardMoveMode = MoveMode_CAP_RECHARGE_MODE;
-		}
-		else if (KeyBoardMoveMode == MoveMode_CAP_RECHARGE_MODE || KeyBoardMoveMode == MoveMode_CAP_RELEASE_HIGH_MODE)
-		{
-			KeyBoardMoveMode = MoveMode_CAP_STOP_MODE;
-		}
-	}
-	/*
-	SHIFT
-	*/
-	if (KeyboardMode == SHIFT){
-		if (KeyBoardMoveMode != MoveMode_CAP_RELEASE_HIGH_MODE /*&& KeyBoardMoveMode != MoveMode_CAP_STOP_MODE */){
-			KeyBoardMoveMode = MoveMode_CAP_RELEASE_HIGH_MODE;
-		}			
-	}else{
-		if (KeyBoardMoveMode == MoveMode_CAP_RELEASE_HIGH_MODE){
-			KeyBoardMoveMode = MoveMode_CAP_RECHARGE_MODE;
-		}
-	}
-	if (KeyBoardMoveMode == MoveMode_CAP_STOP_MODE){
-		KeyBoardMoveMode = MoveMode_CAP_RECHARGE_MODE;
-	}
-	#else
+	
 	if(KeyboardMode == SHIFT){
 		if(KeyBoardMoveMode != MoveMode_CAP_RELEASE_HIGH_MODE){
 			KeyBoardMoveMode = MoveMode_CAP_RELEASE_HIGH_MODE;
@@ -586,61 +515,17 @@ void KeyboardModeFSM(Key *key)
 			KeyBoardMoveMode = MoveMode_CAP_RELEASE_LOW_MODE;
 		}
 	}
-	#endif
 	
-	/*
-	
-	*/
 	switch (KeyBoardMoveMode){
 		case MoveMode_CAP_RELEASE_LOW_MODE://
-			#ifndef USE_CAP3
-			if(Cap_Get_Cap_Voltage() > 11 && Cap_Get_Cap_State() != CAP_STATE_TEMP_RECHARGE && Cap_Get_Cap_State() != CAP_STATE_RELEASE)
-		  {
-				#ifndef BOARD_SLAVE
-			  Cap_State_Switch(CAP_STATE_RELEASE);
-				#endif
-		  }
-			#endif
 			KM_FORWORD_BACK_SPEED=  NORMAL_FORWARD_BACK_SPEED;
       KM_LEFT_RIGHT_SPEED = NORMAL_LEFT_RIGHT_SPEED;
 			break;
 		case MoveMode_CAP_RELEASE_HIGH_MODE: //
-			#ifndef USE_CAP3
-			if(Cap_Get_Cap_Voltage() > 11.5 && Cap_Get_Cap_State() != CAP_STATE_TEMP_RECHARGE && Cap_Get_Cap_State() != CAP_STATE_RELEASE)
-		  {
-			  Cap_State_Switch(CAP_STATE_RELEASE);
-		  }
-		  if(Cap_Get_Cap_Voltage() > 13) 
-		  {
-			  KM_FORWORD_BACK_SPEED=  HIGH_FORWARD_BACK_SPEED;
-			  KM_LEFT_RIGHT_SPEED = HIGH_LEFT_RIGHT_SPEED;
-		  }
-		  else
-		  {
-			  KM_FORWORD_BACK_SPEED=  NORMAL_FORWARD_BACK_SPEED;
-			  KM_LEFT_RIGHT_SPEED = NORMAL_LEFT_RIGHT_SPEED;
-		  }
-			#endif
 			KM_FORWORD_BACK_SPEED=  HIGH_FORWARD_BACK_SPEED;
 			KM_LEFT_RIGHT_SPEED = HIGH_LEFT_RIGHT_SPEED;
 			break;
 		case MoveMode_CAP_STOP_MODE://
-//			if(Cap_Get_Cap_State() != CAP_STATE_STOP)
-//		  {
-//			  Cap_State_Switch(CAP_STATE_STOP);
-//		  }
-			KM_FORWORD_BACK_SPEED=  NORMAL_FORWARD_BACK_SPEED;
-      KM_LEFT_RIGHT_SPEED = NORMAL_LEFT_RIGHT_SPEED;
-			break;
-		case MoveMode_CAP_RECHARGE_MODE://
-			#ifndef USE_CAP3
-			if(Cap_Get_Cap_State() != CAP_STATE_RECHARGE)
-		  {
-				#ifndef BOARD_SLAVE
-			  Cap_State_Switch(CAP_STATE_RECHARGE);
-				#endif
-		  }
-			#endif //USE_CAP3
 			KM_FORWORD_BACK_SPEED=  NORMAL_FORWARD_BACK_SPEED;
       KM_LEFT_RIGHT_SPEED = NORMAL_LEFT_RIGHT_SPEED;
 			break;
@@ -739,34 +624,6 @@ void MouseModeFSM(Mouse *mouse)
 				MouseRMode = SHORT_CLICK;
 			}
 		}break;
-	}
-}
-
-//用于遥控器模式下超级电容测试模式的控制
-void Test_Mode_Handler(void)
-{
-	static uint8_t counter = 0;
-	if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_2))
-	{
-		counter++;
-		if(counter==40)
-		{
-			TestMode = (TestMode==1)?0:1;
-		}
-	}
-	else
-	{
-		counter = 0;
-	}
-	if(TestMode==1)
-	{
-		HAL_GPIO_WritePin(GPIOF, LED_GREEN_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOE, LED_RED_Pin, GPIO_PIN_RESET);
-	}
-	else
-	{
-		HAL_GPIO_WritePin(GPIOF, LED_GREEN_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOE, LED_RED_Pin, GPIO_PIN_SET);
 	}
 }
 

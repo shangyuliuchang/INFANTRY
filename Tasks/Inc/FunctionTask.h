@@ -96,7 +96,6 @@ typedef __packed struct
 typedef enum 
 {
 	  MoveMode_CAP_STOP_MODE,
-	  MoveMode_CAP_RECHARGE_MODE,
 	  MoveMode_CAP_RELEASE_LOW_MODE,
 	  MoveMode_CAP_RELEASE_HIGH_MODE,
 }KeyBoard_MoveMode;
