@@ -403,8 +403,12 @@ void Cap_State_Switch(cap_state State) {
 
 double Cap_Get_Cap_Voltage(void) {
 	#ifdef USE_CAP3
-		return VAL_CAP_Voltage;
+		#ifdef BOARD_SLAVE
+			return rx_cap_voltage;
 		#else
+			return VAL_CAP_Voltage;
+		#endif
+	#else
 	#ifndef BOARD_MAIN
 	  return VAL__CAP_VOLTAGE;
 	#else
@@ -416,8 +420,12 @@ double Cap_Get_Cap_Voltage(void) {
 
 double Cap_Get_Power_Voltage(void){
 	#ifdef USE_CAP3
-		return VAL_POWER_Voltage;
+		#ifdef BOARD_SLAVE
+			return rx_power_voltage;
 		#else
+			return VAL_POWER_Voltage;
+		#endif
+	#else
 	#ifndef BOARD_MAIN
 		return VAL__CAP_Power_Voltage;
 	#else
@@ -428,8 +436,12 @@ double Cap_Get_Power_Voltage(void){
 
 double Cap_Get_Power_CURR(void){
 	#ifdef USE_CAP3
-		return VAL_POWER_CUR;
+		#ifdef BOARD_SLAVE
+			return rx_power_current;
 		#else
+			return VAL_POWER_CUR;
+		#endif
+	#else
 	#ifndef BOARD_MAIN
 		return VAL__CAP_Power_CURR;
 	#else
@@ -838,7 +850,7 @@ static void Cap_Ctr_PREPARE(){
 cap_state cap_check;
 void Cap_Ctr() { // called with period of 2 ms
 	#ifdef BOARD_SLAVE
-	if (WorkState == STOP_STATE || WorkState == PREPARE_STATE) {
+	if (WorkState == STOP_STATE) {
 		Cap_State_Switch(CAP_STATE_STOP);
 	}
 	#else

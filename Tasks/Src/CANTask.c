@@ -194,7 +194,7 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan){
 				}break;
 				default: break;
 			}
-			#endif
+			#endif //USE_CAP3
 			cap_move_state = Can1RxMsg.Data[2];
 			#endif
 		}
@@ -320,6 +320,7 @@ void CANTxInfo(CAN_HandleTypeDef* hcan)
 		case CAP_STATE_RECHARGE: hcan->pTxMsg->Data[1] = 0x00; break;
 		case CAP_STATE_RELEASE: hcan->pTxMsg->Data[1] = 0x01; break;
 		case CAP_STATE_TEMP_RECHARGE: hcan->pTxMsg->Data[1] = 0x02; break;
+		case CAP_STATE_EMERGENCY: hcan->pTxMsg->Data[1] = 0x03; break;
 	}
 	
 	if(fabs(CMFL.offical_speedPID.fdb - CMFL.offical_speedPID.ref) > 300 || fabs(CMFR.offical_speedPID.fdb - CMFR.offical_speedPID.ref) > 300 || \

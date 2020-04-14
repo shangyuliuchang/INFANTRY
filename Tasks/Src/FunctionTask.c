@@ -549,8 +549,9 @@ void KeyboardModeFSM(Key *key)
 	/*
 	CTRL
 	*/
+	#ifndef USE_CAP3
 	if (KeyboardMode != LastKeyboardMode && KeyboardMode == SHIFT_CTRL)
-	{ 
+	{
 		if (KeyBoardMoveMode == MoveMode_CAP_STOP_MODE )
 		{
 			KeyBoardMoveMode = MoveMode_CAP_RECHARGE_MODE;
@@ -575,22 +576,36 @@ void KeyboardModeFSM(Key *key)
 	if (KeyBoardMoveMode == MoveMode_CAP_STOP_MODE){
 		KeyBoardMoveMode = MoveMode_CAP_RECHARGE_MODE;
 	}
+	#else
+	if(KeyboardMode == SHIFT){
+		if(KeyBoardMoveMode != MoveMode_CAP_RELEASE_HIGH_MODE){
+			KeyBoardMoveMode = MoveMode_CAP_RELEASE_HIGH_MODE;
+		}
+	}else{
+		if(KeyBoardMoveMode != MoveMode_CAP_RELEASE_LOW_MODE){
+			KeyBoardMoveMode = MoveMode_CAP_RELEASE_LOW_MODE;
+		}
+	}
+	#endif
 	
 	/*
 	
 	*/
 	switch (KeyBoardMoveMode){
 		case MoveMode_CAP_RELEASE_LOW_MODE://
+			#ifndef USE_CAP3
 			if(Cap_Get_Cap_Voltage() > 11 && Cap_Get_Cap_State() != CAP_STATE_TEMP_RECHARGE && Cap_Get_Cap_State() != CAP_STATE_RELEASE)
 		  {
 				#ifndef BOARD_SLAVE
 			  Cap_State_Switch(CAP_STATE_RELEASE);
 				#endif
 		  }
+			#endif
 			KM_FORWORD_BACK_SPEED=  NORMAL_FORWARD_BACK_SPEED;
       KM_LEFT_RIGHT_SPEED = NORMAL_LEFT_RIGHT_SPEED;
 			break;
 		case MoveMode_CAP_RELEASE_HIGH_MODE: //
+			#ifndef USE_CAP3
 			if(Cap_Get_Cap_Voltage() > 11.5 && Cap_Get_Cap_State() != CAP_STATE_TEMP_RECHARGE && Cap_Get_Cap_State() != CAP_STATE_RELEASE)
 		  {
 			  Cap_State_Switch(CAP_STATE_RELEASE);
@@ -605,6 +620,9 @@ void KeyboardModeFSM(Key *key)
 			  KM_FORWORD_BACK_SPEED=  NORMAL_FORWARD_BACK_SPEED;
 			  KM_LEFT_RIGHT_SPEED = NORMAL_LEFT_RIGHT_SPEED;
 		  }
+			#endif
+			KM_FORWORD_BACK_SPEED=  HIGH_FORWARD_BACK_SPEED;
+			KM_LEFT_RIGHT_SPEED = HIGH_LEFT_RIGHT_SPEED;
 			break;
 		case MoveMode_CAP_STOP_MODE://
 //			if(Cap_Get_Cap_State() != CAP_STATE_STOP)

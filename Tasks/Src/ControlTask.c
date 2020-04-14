@@ -167,7 +167,7 @@ void WorkStateFSM(void)
 		}break;
 		default: break;
 	}
-	#else
+	#else //BOARD_SLAVE
 	WorkState = RxWorkState;
 	#endif
 }
