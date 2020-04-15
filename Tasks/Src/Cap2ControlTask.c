@@ -28,7 +28,6 @@
 
 //各版本下启用运行模式
 
-
 #ifdef USE_CAP3
   #define CAP_LED_SHOW
 #endif /* USE_CAP3 */
@@ -36,14 +35,13 @@
 
 #define ADC_CHANNALS         (4)
 #define ADC_HITS             (50)
-	
-#define AIM_POWER            (JUDGE_State == OFFLINE?(80.0f):(80.0f))
+
 #define Cap_MOS_1_GPIO_PORT  GPIOE
 #define Cap_MOS_2_GPIO_PORT  GPIOC
 
 #define VAL_POWER_Voltage    (((float)ADC_val[1]*3.3f*11.0f)/4095.0f)//PB0
 #define VAL_CAP_Voltage		   ((float)ADC_val[2]*3.3f*11.0f/4095.0f)							//PB1
-#define VAL_POWER_CUR        ((VAL_CAP_Voltage>0.0f?AIM_POWER*0.95f/VAL_CAP_Voltage:10.0f)<=10.0f?(VAL_CAP_Voltage>0.0f?AIM_POWER*0.95f/VAL_CAP_Voltage:10.0f):10.0f)
+#define VAL_POWER_CUR        ((VAL_CAP_Voltage>0.0f?Cap_Get_Aim_Power()*0.95f/VAL_CAP_Voltage:10.0f)<=10.0f?(VAL_CAP_Voltage>0.0f?Cap_Get_Aim_Power()*0.95f/VAL_CAP_Voltage:10.0f):10.0f)
 #define DAC_OUT		           (uint32_t)(VAL_POWER_CUR*4095.0f/3.3f/5.0f)
 
 float Iset=0;
@@ -60,7 +58,7 @@ cap_state CapState = CAP_STATE_STOP;
 
 static void Cap_State(void);
 static void Cap_Ctr(void);
-
+float Cap_Get_Aim_Power(void);
 
 void Cap_Init(void) {
 	#ifdef USE_CAP3
@@ -75,6 +73,7 @@ void Cap_Init(void) {
 	memset(ADC_hits_val, 0, sizeof(ADC_hits_val));
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC_hits_val, ADC_CHANNALS*ADC_HITS);
 }
+
 //在控制主循环中被调用
 void Cap_Run(void) {
 	int cnt1, cnt2;
@@ -93,7 +92,12 @@ void Cap_Run(void) {
 	Cap_State();
 }
 float Cap_Get_Aim_Power(void){
-	return AIM_POWER;
+	int power[] = {0,60,80,120};
+	if(JUDGE_State == OFFLINE){
+		return 80;
+	}else{
+		return power[RefereeData.GameRobotState.robot_level]*0.95+RefereeData.PowerHeat.chassis_power_buffer*0.05;
+	}
 }
 
 //负责切换状态并控制硬件做出相应切换动作
