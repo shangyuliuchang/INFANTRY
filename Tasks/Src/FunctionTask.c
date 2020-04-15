@@ -479,8 +479,6 @@ void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 	//∑¿ø®µØ¥¶¿Ì
 	Bullet_Block_Handler();
 	
-	LED_Show_SuperCap_Voltage(1);
-	
 	LastState = WorkState;
 }
 

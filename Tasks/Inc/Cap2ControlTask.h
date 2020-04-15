@@ -47,13 +47,7 @@ void Cap_Init(void);
   */
 void Cap_Run(void);
 
-/*********************************************************
-  * @brief  Switch the state of the capacitance controller
-			into a specific state manually.
-  * @param  The aim state of the capacitance controller.
-  * @retval None
-  */
-void Cap_State_Switch(cap_state);
+
 
 /*********************************************************
   * @brief  Get the current voltage of capacitance.
@@ -73,7 +67,7 @@ double Cap_Get_Power_CURR(void);
   */
 cap_state Cap_Get_Cap_State(void);
 
-void LED_Show_SuperCap_Voltage(uint8_t flag);
+static void LED_Show_SuperCap_Voltage(uint8_t flag);
 uint8_t Client_Show_SuperCap_Voltage(void);
 float Cap_Get_Aim_Power(void);
 

@@ -75,8 +75,16 @@ void Cap_Init(void) {
 	memset(ADC_hits_val, 0, sizeof(ADC_hits_val));
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC_hits_val, ADC_CHANNALS*ADC_HITS);
 }
-
+//在控制主循环中被调用
 void Cap_Run(void) {
+	int cnt1, cnt2;
+	memset(ADC_tmp, 0, sizeof(ADC_tmp));
+	for (cnt1 = 0; cnt1 < ADC_CHANNALS; cnt1++) {
+		for (cnt2 = 0; cnt2 < ADC_HITS; cnt2++) {
+			ADC_tmp[cnt1] += ADC_hits_val[cnt2][cnt1];
+		}
+		ADC_val[cnt1] = ADC_tmp[cnt1] / ADC_HITS;
+	}
 	#ifdef CAP_LED_SHOW
 	  LED_Show_SuperCap_Voltage(1);
 	#endif /* CAP_LED_SHOW */
@@ -87,7 +95,9 @@ void Cap_Run(void) {
 float Cap_Get_Aim_Power(void){
 	return AIM_POWER;
 }
-void Cap_State_Switch(cap_state State) {
+
+//负责切换状态并控制硬件做出相应切换动作
+static void Cap_State_Switch(cap_state State) {
 	switch (State) {
 	case CAP_STATE_STOP:
 		#ifdef USE_CAP3
@@ -147,7 +157,10 @@ double Cap_Get_Power_Voltage(void){
 		return rx_power_voltage;
 	#else
 		#ifdef USE_CAP3
-			return VAL_POWER_Voltage;
+			if(VAL_POWER_Voltage>0)
+				return VAL_POWER_Voltage;
+			else
+				return 0.1;
 		#else
 			return 25;
 		#endif
@@ -176,7 +189,9 @@ cap_state Cap_Get_Cap_State(void) {
   * @param  None
   * @retval None
   */
-void Cap_State() { // called with period of 2 ms
+
+//处于某个状态时的硬件控制
+static void Cap_State(void) { // called with period of 2 ms
 	switch (CapState) {
 	case CAP_STATE_STOP:
 		HAL_DAC_SetValue(&hdac,	DAC1_CHANNEL_1,	DAC_ALIGN_12B_R,	0);
@@ -239,8 +254,8 @@ static void Cap_Ctr_PREPARE(){
   * @param  None
   * @retval None
   */
-
-void Cap_Ctr() { // called with period of 2 ms
+//状态切换判断
+static void Cap_Ctr() { // called with period of 2 ms
 	#ifdef BOARD_SLAVE
 	if (WorkState == STOP_STATE) {
 		Cap_State_Switch(CAP_STATE_STOP);
@@ -275,20 +290,10 @@ void Cap_Ctr() { // called with period of 2 ms
   * @retval None
   */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
-	if(hadc == &hadc1)
-	{
-		int cnt1, cnt2;
-		memset(ADC_tmp, 0, sizeof(ADC_tmp));
-		for (cnt1 = 0; cnt1 < ADC_CHANNALS; cnt1++) {
-			for (cnt2 = 0; cnt2 < ADC_HITS; cnt2++) {
-				ADC_tmp[cnt1] += ADC_hits_val[cnt2][cnt1];
-			}
-			ADC_val[cnt1] = ADC_tmp[cnt1] / ADC_HITS;
-		}
-	}
+	
 }
-
-void LED_Show_SuperCap_Voltage(uint8_t flag)
+#ifdef USE_CAP3
+static void LED_Show_SuperCap_Voltage(uint8_t flag)
 {
 	if (flag == 0)
 	{
@@ -304,6 +309,7 @@ void LED_Show_SuperCap_Voltage(uint8_t flag)
 		HAL_GPIO_WritePin(GPIOG, 0x1fe >> unlight, GPIO_PIN_RESET);
 	}
 }
+#endif
 
 int light;
 uint8_t Client_Show_SuperCap_Voltage(void)
