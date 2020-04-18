@@ -164,9 +164,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 		#endif /*USE_AUTOAIM*/
 	}
 }
-#ifdef CAP_DEBUG
-extern uint8_t sendfinish;
-#endif /* CAP_DEBUG */
+
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
 	if(UartHandle == &JUDGE_UART)
@@ -175,9 +173,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 	}
 	else if(UartHandle == &CAP_UART)
 	{
-		#ifdef CAP_DEBUG
-		sendfinish = 1;
-		#endif /* CAP_DEBUG */
+		
 	}
 }
 void UART_IDLE_Handler(UART_HandleTypeDef *UartHandle)

@@ -232,7 +232,6 @@ void MouseModeFSM(Mouse *mouse);
 //@尹云鹏   controlTask changed
 //左拨杆下才为真正的键鼠模式，上、中两档位可编辑
 //------------
-extern uint8_t sendfinish;  extern int32_t cps[4][4000];//用于串口发送功率数据@唐欣阳
 
 void MouseKeyControlProcess(Mouse *mouse, Key *key,Remote *rc)
 {	

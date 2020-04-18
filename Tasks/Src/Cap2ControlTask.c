@@ -323,6 +323,7 @@ uint8_t Client_Show_SuperCap_Voltage(void)
 	else
 	{
 		light = (int)(6.0f * (Cap_Get_Cap_Voltage() * Cap_Get_Cap_Voltage() - 121.0f) / (21.0f * 21.0f - 121.0f));
+		if(light>6)light=6;
 		return (uint8_t)(0x0fc0 >> light);
 	}
 }

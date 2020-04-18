@@ -143,16 +143,6 @@ void judgeUartRxCpltCallback(void)
 			}
 		}
 		
-		if(buffercnt == 11 && cmdID == 0x0103)
-		{
-			if (myVerify_CRC16_Check_Sum(buffer, 11))
-			{
-				JUDGE_Received = 1;
-				receiving = 0;
-				buffercnt = 0;
-			}
-		}
-		
 		if(buffercnt == 11 && cmdID == 0x0104)
 		{
 			if (myVerify_CRC16_Check_Sum(buffer, 11))
@@ -279,7 +269,7 @@ void getJudgeState(void)
 	}
 	else
 	{
-		s_count_judge++;
+		if(s_count_judge<1000)s_count_judge++;
 		if(s_count_judge > 300)//300ms
 		{
 			JUDGE_State = OFFLINE;

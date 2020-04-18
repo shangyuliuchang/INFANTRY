@@ -13,7 +13,7 @@
 #define __POWERLIMITATIONTASK_H
 
 #include "includes.h"
-
+extern int32_t IntensitySum;
 void PowerLimitation(void);
 
 #endif /*__POWERLIMITATIONTASK_H */

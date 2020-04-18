@@ -249,13 +249,13 @@ void controlLoop()
 	{
 		Chassis_Data_Decoding();
 		
-		for(int i=0;i<8;i++) if(can1[i]!=0) (can1[i]->Handle)(can1[i]);
-		for(int i=0;i<8;i++) if(can2[i]!=0) (can2[i]->Handle)(can2[i]);
-		
 		#ifdef USE_POWERLIMITATION
 		PowerLimitation();
 		#endif
-
+		
+		for(int i=0;i<8;i++) if(can1[i]!=0) (can1[i]->Handle)(can1[i]);
+		for(int i=0;i<8;i++) if(can2[i]!=0) (can2[i]->Handle)(can2[i]);
+		
 		#ifdef CAN11
 		setCAN11();
 		#endif

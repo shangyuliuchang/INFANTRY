@@ -38,7 +38,7 @@
 #define USE_POWERLIMITATION
 #define USE_CHASSIS_ADJUST
 //#define USE_GIMBAL_ENCODER
-#define USE_CAP3
+//#define USE_CAP3
 
 #ifdef INFANTRY
 	#define CAN11
