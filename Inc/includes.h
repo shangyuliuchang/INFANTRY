@@ -25,8 +25,8 @@
 
 //双板通信配置
 //#define DOUBLE_BOARD_CAN1
-//#define DOUBLE_BOARD_CAN2
-#if defined (DOUBLE_BOARD_CAN1) || (DOUBLE_BOARD_CAN2)
+#define DOUBLE_BOARD_CAN2
+#if defined (DOUBLE_BOARD_CAN1) || defined (DOUBLE_BOARD_CAN2)
 #define BOARD_MAIN
 //#define BOARD_SLAVE
 #endif
@@ -38,7 +38,7 @@
 #define USE_POWERLIMITATION
 #define USE_CHASSIS_ADJUST
 //#define USE_GIMBAL_ENCODER
-//#define USE_CAP3
+#define USE_CAP3
 
 #ifdef INFANTRY
 	#define CAN11

@@ -27,10 +27,9 @@
 
 
 //各版本下启用运行模式
-
 #ifdef USE_CAP3
-  #define CAP_LED_SHOW
-#endif /* USE_CAP3 */
+#define CAP_LED_SHOW
+#endif
 //Program Begin!
 
 #define ADC_CHANNALS         (4)
@@ -46,6 +45,13 @@
 
 float Iset=0;
 int disableInput=0;
+
+double rx_cap_voltage=0.1;
+double rx_power_voltage=0.1;
+double rx_power_current=0.1;
+cap_state RxCapState = CAP_STATE_STOP;
+uint8_t RxAimedPower=0;
+
 #ifdef USE_CAP3	
 static uint16_t mos[4]={GPIO_PIN_12,GPIO_PIN_6,GPIO_PIN_2,GPIO_PIN_3};
 #endif
@@ -54,7 +60,7 @@ static int16_t ADC_hits_val[ADC_HITS][ADC_CHANNALS];
 static int32_t ADC_tmp[ADC_CHANNALS];
 int16_t ADC_val[ADC_CHANNALS];
 
-cap_state CapState = CAP_STATE_STOP;
+static cap_state CapState = CAP_STATE_STOP;
 
 static void Cap_State(void);
 static void Cap_Ctr(void);
@@ -92,12 +98,16 @@ void Cap_Run(void) {
 	Cap_State();
 }
 float Cap_Get_Aim_Power(void){
+	#ifndef BOARD_SLAVE
 	int power[] = {0,60,80,120};
 	if(JUDGE_State == OFFLINE){
-		return 80;
+		return 120;
 	}else{
-		return power[RefereeData.GameRobotState.robot_level]*0.95+RefereeData.PowerHeat.chassis_power_buffer*0.05;
+		return power[RefereeData.GameRobotState.robot_level]*0.95+(RefereeData.PowerHeat.chassis_power_buffer-50)*0.05;
 	}
+	#else
+	return RxAimedPower;
+	#endif
 }
 
 //负责切换状态并控制硬件做出相应切换动作
@@ -144,47 +154,55 @@ static void Cap_State_Switch(cap_state State) {
 }
 
 double Cap_Get_Cap_Voltage(void) {
-	#ifdef BOARD_SLAVE
-		return rx_cap_voltage;
-	#else
-		#ifdef USE_CAP3
-			return VAL_CAP_Voltage;
+	#ifdef USE_CAP3
+		#ifdef BOARD_MAIN
+			return rx_cap_voltage;
 		#else
-			return 25;
+			return VAL_CAP_Voltage;
 		#endif
+	#else
+		return 25.0;
 	#endif
 }
 
 
 double Cap_Get_Power_Voltage(void){
-	#ifdef BOARD_SLAVE
-		return rx_power_voltage;
-	#else
-		#ifdef USE_CAP3
+	#ifdef USE_CAP3
+		#ifdef BOARD_MAIN
+			return rx_power_voltage;
+		#else
 			if(VAL_POWER_Voltage>0)
 				return VAL_POWER_Voltage;
 			else
 				return 0.1;
-		#else
-			return 25;
 		#endif
+	#else
+		return 25.0;
 	#endif
 }
 
 double Cap_Get_Power_CURR(void){
-	#ifdef BOARD_SLAVE
-		return rx_power_current;
-	#else
-		#ifdef USE_CAP3
-			return VAL_POWER_CUR;
+	#ifdef USE_CAP3
+		#ifdef BOARD_MAIN
+			return rx_power_current;
 		#else
-			return 1;
+			return VAL_POWER_CUR;
 		#endif
+	#else
+		return 1.0;
 	#endif
 }
 
 cap_state Cap_Get_Cap_State(void) {
-	return CapState;
+	#ifdef USE_CAP3
+		#ifdef BOARD_MAIN
+			return RxCapState;
+		#else
+			return CapState;
+		#endif
+	#else
+		return CAP_STATE_RELEASE;
+	#endif
 }
 
 

@@ -13,7 +13,7 @@
 #include "includes.h"
 #include "math.h"
 int32_t IntensitySum;
-#define POWER_LIMITATION_DEBUG
+//#define POWER_LIMITATION_DEBUG
 
 void PowerLimitation(void)
 {
@@ -26,12 +26,12 @@ void PowerLimitation(void)
 	int16_t CMBLIntensity = __fabs((CMBL.TargetAngle - CMBL.RxMsgC6x0.RotateSpeed) * CMBL.offical_speedPID.kp);
 	int16_t CMBRIntensity = __fabs((CMBR.TargetAngle - CMBR.RxMsgC6x0.RotateSpeed) * CMBR.offical_speedPID.kp);
 	
-	int32_t IntensityMax = (Cap_Get_Aim_Power()*0.8f*2000.0f/Cap_Get_Power_Voltage()<14000?Cap_Get_Aim_Power()*0.8f*819.2f/Cap_Get_Power_Voltage():14000);
+	int32_t IntensityMax = (Cap_Get_Aim_Power()*0.8f*819.2f/25.0f<14000?Cap_Get_Aim_Power()*0.8f*819.2f/25.0f:14000);
 	int32_t IntensitySum = CMFLIntensity + CMFRIntensity + CMBLIntensity + CMBRIntensity;
 	
 	
 	#ifndef POWER_LIMITATION_DEBUG
-	if(Cap_Get_Cap_State()==CAP_STATE_RELEASE && Cap_Get_Cap_Voltage()>15){
+	if(Cap_Get_Cap_State()==CAP_STATE_RELEASE && Cap_Get_Cap_Voltage()>12){
 		IntensityMax = INT16_MAX;
 	}
 	else if(Cap_Get_Cap_State == CAP_STATE_EMERGENCY){

@@ -167,6 +167,7 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan){
 				case 0x03: RxWorkState=ADDITIONAL_STATE_TWO; break;
 				default: RxWorkState=STOP_STATE; break;
 			}
+			RxAimedPower=Can1RxMsg.Data[1];
 			if(RxWorkState == STOP_STATE || RxWorkState == PREPARE_STATE) WorkState = RxWorkState;
 			#endif
 		}
@@ -177,6 +178,12 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan){
 			rx_power_voltage = Can1RxMsg.Data[0] / 5;
 			rx_power_current = (double)(Can1RxMsg.Data[1] * 256 + Can1RxMsg.Data[2]) / rx_power_voltage;
 			rx_cap_voltage = Can1RxMsg.Data[3] / 5;
+			switch(Can1RxMsg.Data[4]){
+				case 0xff: RxCapState=CAP_STATE_STOP; break;
+				case 0x01: RxCapState=CAP_STATE_RELEASE; break;
+				case 0x02: RxCapState=CAP_STATE_PREPARE; break;
+				case 0x03: RxCapState=CAP_STATE_EMERGENCY; break;
+			}
 			#endif
 		}
 		if(!flag)
@@ -238,14 +245,32 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan){
 		{
 			flag=1;
 			#if defined (BOARD_SLAVE) && defined (DOUBLE_BOARD_CAN2)
-			
+			switch(Can2RxMsg.Data[0])
+			{
+				case 0xff: RxWorkState=STOP_STATE; break;
+				case 0x00: RxWorkState=PREPARE_STATE; break;
+				case 0x01: RxWorkState=NORMAL_STATE; break;
+				case 0x02: RxWorkState=ADDITIONAL_STATE_ONE; break;
+				case 0x03: RxWorkState=ADDITIONAL_STATE_TWO; break;
+				default: RxWorkState=STOP_STATE; break;
+			}
+			RxAimedPower=Can2RxMsg.Data[1];
+			if(RxWorkState == STOP_STATE || RxWorkState == PREPARE_STATE) WorkState = RxWorkState;
 			#endif
 		}
-		else if(Can1RxMsg.StdId==0x301)
+		else if(Can2RxMsg.StdId==0x301)
 		{
 			flag = 1;
 			#if defined (BOARD_MAIN) && defined (DOUBLE_BOARD_CAN2)
-			
+			rx_power_voltage = Can2RxMsg.Data[0] / 5;
+			rx_power_current = (double)(Can2RxMsg.Data[1] * 256 + Can2RxMsg.Data[2]) / rx_power_voltage;
+			rx_cap_voltage = Can2RxMsg.Data[3] / 5;
+			switch(Can2RxMsg.Data[4]){
+				case 0xff: RxCapState=CAP_STATE_STOP; break;
+				case 0x01: RxCapState=CAP_STATE_RELEASE; break;
+				case 0x02: RxCapState=CAP_STATE_PREPARE; break;
+				case 0x03: RxCapState=CAP_STATE_EMERGENCY; break;
+			}
 			#endif
 		}
 		if(!flag)
@@ -286,14 +311,7 @@ void CANTxInfo(CAN_HandleTypeDef* hcan)
 		case ADDITIONAL_STATE_TWO: hcan->pTxMsg->Data[0] = 0x03; break;
 	}
 	
-	switch(Cap_Get_Cap_State())
-	{
-		case CAP_STATE_STOP: hcan1.pTxMsg->Data[1] = 0xff; break;
-		case CAP_STATE_RECHARGE: hcan->pTxMsg->Data[1] = 0x00; break;
-		case CAP_STATE_RELEASE: hcan->pTxMsg->Data[1] = 0x01; break;
-		case CAP_STATE_TEMP_RECHARGE: hcan->pTxMsg->Data[1] = 0x02; break;
-		case CAP_STATE_EMERGENCY: hcan->pTxMsg->Data[1] = 0x03; break;
-	}
+	hcan->pTxMsg->Data[1] = (uint8_t)Cap_Get_Aim_Power();
 	
 	if(fabs(CMFL.offical_speedPID.fdb - CMFL.offical_speedPID.ref) > 300 || fabs(CMFR.offical_speedPID.fdb - CMFR.offical_speedPID.ref) > 300 || \
 		fabs(CMBL.offical_speedPID.fdb - CMBL.offical_speedPID.ref) > 300 || fabs(CMBR.offical_speedPID.fdb - CMBR.offical_speedPID.ref) > 300 || RefereeData.PowerHeat.chassis_power_buffer < 59.0f || ChassisTwistState)
@@ -322,7 +340,13 @@ void CANTxInfo(CAN_HandleTypeDef* hcan)
 	hcan->pTxMsg->Data[1] = (uint8_t)((uint16_t)(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()) >> 8 & 0xff);
 	hcan->pTxMsg->Data[2] = (uint8_t)((uint16_t)(Cap_Get_Power_CURR()*Cap_Get_Power_Voltage()) & 0xff);
 	hcan->pTxMsg->Data[3] = (uint8_t)(Cap_Get_Cap_Voltage() * 5);
-	hcan->pTxMsg->Data[4] = 0;
+	switch(Cap_Get_Cap_State())
+	{
+		case CAP_STATE_STOP: hcan1.pTxMsg->Data[4] = 0xff; break;
+		case CAP_STATE_RELEASE: hcan->pTxMsg->Data[4] = 0x01; break;
+		case CAP_STATE_PREPARE: hcan->pTxMsg->Data[4] = 0x02; break;
+		case CAP_STATE_EMERGENCY: hcan->pTxMsg->Data[4] = 0x03; break;
+	}
 	hcan->pTxMsg->Data[5] = 0;
 	hcan->pTxMsg->Data[6] = 0;
 	hcan->pTxMsg->Data[7] = 0;

@@ -27,9 +27,10 @@ extern uint8_t rlease_flag;
 extern double rx_cap_voltage;
 extern double rx_power_voltage;
 extern double rx_power_current;
-extern cap_state CapState;
 extern int16_t ADC_val[];
 extern float Iset;
+extern cap_state RxCapState;
+extern uint8_t RxAimedPower;
 
 extern int disableInput;
 

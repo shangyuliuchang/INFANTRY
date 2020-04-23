@@ -13,6 +13,7 @@
 
 WorkState_e WorkState = PREPARE_STATE;
 WorkState_e RxWorkState = PREPARE_STATE;
+
 uint16_t prepare_time = 0;
 uint16_t counter = 0;
 uint8_t	no_signal = 0;
@@ -52,9 +53,11 @@ void IWDG_Handler(void)
 		IWDG_counter++;
 	if(IWDG_counter > 100)
 	{
+		#ifndef BOARD_SLAVE
 		no_signal = 1;
 		WorkState = STOP_STATE;
 		inputmode = STOP;
+		#endif
 	}
 	if(IWDG_counter < 500)
 	{
@@ -77,9 +80,6 @@ void WorkStateFSM(void)
 				//playMusicSuperMario();
 				chassis_rotate_pid.Reset(&chassis_rotate_pid);
 				WorkState = NORMAL_STATE;
-				#ifdef BOARD_SLAVE
-				WorkState = RxWorkState;
-				#endif
 				prepare_time = 0;
 			}
 			for(int i=0;i<8;i++) 
@@ -173,7 +173,7 @@ void WorkStateFSM(void)
 }
 
 void ControlRotate(void)
-{	
+{
 	#ifdef USE_CHASSIS_FOLLOW
 		ChassisTwist();
 		NORMALIZE_ANGLE180(ChassisSpeedRef.rotate_ref);
@@ -245,6 +245,7 @@ void controlLoop()
 	GM_RealAngle_RCD = GM_RealAngle_Rcd(&GMY, &GMP, delay_t);
 	imu_w_RCD = imu_w_rcd(&imu, delay_t);
 	//AutoAim();
+	#ifndef BOARD_SLAVE
 	if(WorkState > 0)
 	{
 		Chassis_Data_Decoding();
@@ -269,6 +270,7 @@ void controlLoop()
 		setCAN22();
 		#endif
 	}
+	#endif //BOARD_SLAVE
 }
 
 //时间中断入口函数
@@ -284,6 +286,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 	else if (htim->Instance == htim7.Instance)//ims时钟
 	{
+		//看门狗处理
+		IWDG_Handler();
+		#ifndef BOARD_SLAVE
 		rc_cnt++;
 		if(auto_counter > 0) auto_counter--;
 		if(auto_counter_stir > 0) auto_counter_stir--;
@@ -292,8 +297,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		if(auto_counter_heat1 > 0) auto_counter_heat1--;
 		if(shoot_cd > 0) shoot_cd--;
 		
-		//看门狗处理
-		IWDG_Handler();
 		if (rx_free == 1)
 		{
 			if( (rc_cnt <= 17) && (rc_first_frame == 1))
@@ -323,5 +326,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			}
 			rc_update = 0;
 		}
+		#endif //BOARD_SLAVE
 	}
 }
