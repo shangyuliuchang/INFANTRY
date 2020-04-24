@@ -22,7 +22,7 @@
 #define BULLET_TYPE 0
 #define YAW_DIR (-1.0f)
 #define PIT_DIR (1.0f)
-
+//关于这些宏定义，可以参考工程文件夹里的那个txt
 //双板通信配置
 //#define DOUBLE_BOARD_CAN1
 #define DOUBLE_BOARD_CAN2

@@ -12,7 +12,6 @@
   */
 #include "includes.h"
 #include "math.h"
-int32_t IntensitySum;
 //#define POWER_LIMITATION_DEBUG
 
 void PowerLimitation(void)
@@ -29,7 +28,7 @@ void PowerLimitation(void)
 	int32_t IntensityMax = (Cap_Get_Aim_Power()*0.8f*819.2f/25.0f<14000?Cap_Get_Aim_Power()*0.8f*819.2f/25.0f:14000);
 	int32_t IntensitySum = CMFLIntensity + CMFRIntensity + CMBLIntensity + CMBRIntensity;
 	
-	
+	#ifdef USE_CAP3
 	#ifndef POWER_LIMITATION_DEBUG
 	if(Cap_Get_Cap_State()==CAP_STATE_RELEASE && Cap_Get_Cap_Voltage()>12){
 		IntensityMax = INT16_MAX;
@@ -40,6 +39,7 @@ void PowerLimitation(void)
 	}
 	#else
 	IntensityMax=2000;
+	#endif
 	#endif
 	
 	if(IntensitySum>IntensityMax){

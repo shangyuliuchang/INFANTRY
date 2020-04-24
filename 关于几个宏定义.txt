@@ -1,0 +1,5 @@
+DOUBLE_BOARD_CAN1 和 DOUBLE_BOARD_CAN2是用双板的时候才需开启的，且是二选一。
+双板时BOARD_SLAVE和BOARD_MAIN二选一，分别是从板和主板。除电容外所有设备挂在主板上，只有电容是连从板的。
+USE_AUTOAIM关了好像会报错，无自瞄设备时在ControlTask.c中的controlLoop中将AutoAim()注释掉即可
+一块板的时候由电容就开USE_CAP3否则就关。双板时无论有无电容，主板开。如果有电容，从板开，否则关。
+4个setCAN与电机对应。有相应电机就开，否则就关。
