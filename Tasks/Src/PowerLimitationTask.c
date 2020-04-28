@@ -12,40 +12,33 @@
   */
 #include "includes.h"
 #include "math.h"
-//#define POWER_LIMITATION_DEBUG
+#define POWER_LIMITATION_DEBUG
 
 void PowerLimitation(void)
 {
-	#ifndef POWER_LIMITATION_DEBUG
-	float realPowerBuffer=0;
-	#endif
+	double kIntensityToMoment=200000.0;
+	double PowerMax=(double)Cap_Get_Aim_Power()*0.7;
+	double rotateSpeedRate=0.0;
+	double PowerSum=CMFL.offical_speedPID.kp*((CMFL.TargetAngle-CMFL.RxMsgC6x0.RotateSpeed)*CMFL.RxMsgC6x0.RotateSpeed+\
+																						(CMFR.TargetAngle-CMFR.RxMsgC6x0.RotateSpeed)*CMFR.RxMsgC6x0.RotateSpeed+\
+																						(CMBL.TargetAngle-CMBL.RxMsgC6x0.RotateSpeed)*CMBL.RxMsgC6x0.RotateSpeed+\
+																						(CMBR.TargetAngle-CMBR.RxMsgC6x0.RotateSpeed)*CMBR.RxMsgC6x0.RotateSpeed)/kIntensityToMoment;
 	
-	int16_t CMFLIntensity = __fabs((CMFL.TargetAngle - CMFL.RxMsgC6x0.RotateSpeed) * CMFL.offical_speedPID.kp);
-	int16_t CMFRIntensity = __fabs((CMFR.TargetAngle - CMFR.RxMsgC6x0.RotateSpeed) * CMFR.offical_speedPID.kp);
-	int16_t CMBLIntensity = __fabs((CMBL.TargetAngle - CMBL.RxMsgC6x0.RotateSpeed) * CMBL.offical_speedPID.kp);
-	int16_t CMBRIntensity = __fabs((CMBR.TargetAngle - CMBR.RxMsgC6x0.RotateSpeed) * CMBR.offical_speedPID.kp);
-	
-	int32_t IntensityMax = (Cap_Get_Aim_Power()*0.8f*819.2f/25.0f<14000?Cap_Get_Aim_Power()*0.8f*819.2f/25.0f:14000);
-	int32_t IntensitySum = CMFLIntensity + CMFRIntensity + CMBLIntensity + CMBRIntensity;
-	
-	#ifdef USE_CAP3
-	#ifndef POWER_LIMITATION_DEBUG
-	if(Cap_Get_Cap_State()==CAP_STATE_RELEASE && Cap_Get_Cap_Voltage()>12){
-		IntensityMax = INT16_MAX;
-	}
-	else if(Cap_Get_Cap_State == CAP_STATE_EMERGENCY){
-		realPowerBuffer = RefereeData.PowerHeat.chassis_power_buffer>0?RefereeData.PowerHeat.chassis_power_buffer:0;
-		IntensityMax = 2500 + 192*realPowerBuffer;
-	}
+	#ifdef POWER_LIMITATION_DEBUG
+	PowerMax=30.0;
 	#else
-	IntensityMax=2000;
+	if(Cap_Get_Cap_State()==CAP_STATE_RELEASE && Cap_Get_Cap_Voltage()>12.0){
+		PowerMax = INT16_MAX;
+	}
 	#endif
-	#endif
-	
-	if(IntensitySum>IntensityMax){
-		CMFL.TargetAngle = (CMFL.TargetAngle - CMFL.RxMsgC6x0.RotateSpeed) * IntensityMax / IntensitySum + CMFL.RxMsgC6x0.RotateSpeed;
-		CMFR.TargetAngle = (CMFR.TargetAngle - CMFR.RxMsgC6x0.RotateSpeed) * IntensityMax / IntensitySum + CMFR.RxMsgC6x0.RotateSpeed;
-		CMBL.TargetAngle = (CMBL.TargetAngle - CMBL.RxMsgC6x0.RotateSpeed) * IntensityMax / IntensitySum + CMBL.RxMsgC6x0.RotateSpeed;
-		CMBR.TargetAngle = (CMBR.TargetAngle - CMBR.RxMsgC6x0.RotateSpeed) * IntensityMax / IntensitySum + CMBR.RxMsgC6x0.RotateSpeed;
+	if(PowerSum>PowerMax){
+		rotateSpeedRate=1.0-(PowerSum-PowerMax)/(CMFL.offical_speedPID.kp*(CMFL.TargetAngle*CMFL.RxMsgC6x0.RotateSpeed+\
+																																			 CMFR.TargetAngle*CMFR.RxMsgC6x0.RotateSpeed+\
+																																			 CMBL.TargetAngle*CMBL.RxMsgC6x0.RotateSpeed+\
+																																			 CMBR.TargetAngle*CMBR.RxMsgC6x0.RotateSpeed)/kIntensityToMoment);
+		CMFL.TargetAngle*=rotateSpeedRate;
+		CMFR.TargetAngle*=rotateSpeedRate;
+		CMBL.TargetAngle*=rotateSpeedRate;
+		CMBR.TargetAngle*=rotateSpeedRate;
 	}
 }

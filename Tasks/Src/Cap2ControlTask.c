@@ -40,8 +40,8 @@
 
 #define VAL_POWER_Voltage    (((float)ADC_val[1]*3.3f*11.0f)/4095.0f)//PB0
 #define VAL_CAP_Voltage		   ((float)ADC_val[2]*3.3f*11.0f/4095.0f)							//PB1
-#define VAL_POWER_CUR        ((VAL_CAP_Voltage>0.0f?Cap_Get_Aim_Power()*0.95f/VAL_CAP_Voltage:10.0f)<=10.0f?(VAL_CAP_Voltage>0.0f?Cap_Get_Aim_Power()*0.95f/VAL_CAP_Voltage:10.0f):10.0f)
-#define DAC_OUT		           (uint32_t)(VAL_POWER_CUR*4095.0f/3.3f/5.0f)
+#define VAL_POWER_CUR        ((VAL_CAP_Voltage>0.0f?Cap_Get_Aim_Power()/VAL_CAP_Voltage:10.0f)<=10.0f?(VAL_CAP_Voltage>0.0f?Cap_Get_Aim_Power()/VAL_CAP_Voltage:10.0f):10.0f)
+#define DAC_OUT		           (uint32_t)(VAL_POWER_CUR*4095.0f/3.3f/5.0f*1.3f)
 
 float Iset=0;
 int disableInput=0;
