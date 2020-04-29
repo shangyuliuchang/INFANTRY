@@ -249,6 +249,11 @@
           <WinNumber>1</WinNumber>
           <ItemText>Can1RxMsg.StdId</ItemText>
         </Ww>
+        <Ww>
+          <count>12</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>PowerSum</ItemText>
+        </Ww>
       </WatchWindow1>
       <WatchWindow2>
         <Ww>

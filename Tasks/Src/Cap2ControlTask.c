@@ -29,6 +29,7 @@
 //各版本下启用运行模式
 #ifdef USE_CAP3
 #define CAP_LED_SHOW
+#define USE_EMERGENCY_MODE
 #endif
 //Program Begin!
 
@@ -247,17 +248,26 @@ static void Cap_Ctr_STOP() {
 }
 
 static void Cap_Ctr_RELEASE() {
-		if(VAL_POWER_Voltage<9)
-		{
-			Cap_State_Switch(CAP_STATE_STOP);
+	static int cap_emergency_cnt=0;
+	if(VAL_POWER_Voltage<9)
+	{
+		Cap_State_Switch(CAP_STATE_STOP);
+	}
+	else
+	{
+		#ifdef USE_EMERGENCY_MODE
+		if(VAL_CAP_Voltage<10){
+			if(cap_emergency_cnt<1100){
+				cap_emergency_cnt++;
+			}
+			if(cap_emergency_cnt>1000){
+				Cap_State_Switch(CAP_STATE_EMERGENCY);
+			}
+		}else{
+			cap_emergency_cnt=0;
 		}
-		else
-		{
-			//if(VAL_CAP_Voltage<12)
-				//Cap_State_Switch(CAP_STATE_EMERGENCY);
-			//else if(VAL_CAP_Voltage<24)
-				//Cap_State_Switch(CAP_STATE_BOOST);
-		}
+		#endif
+	}
 }
 static void Cap_Ctr_EMERGENCY(){
 	

@@ -27,8 +27,8 @@
 //#define DOUBLE_BOARD_CAN1
 #define DOUBLE_BOARD_CAN2
 #if defined (DOUBLE_BOARD_CAN1) || defined (DOUBLE_BOARD_CAN2)
-#define BOARD_MAIN
-//#define BOARD_SLAVE
+//#define BOARD_MAIN
+#define BOARD_SLAVE
 #endif
 
 #define USE_AUTOAIM
@@ -41,7 +41,7 @@
 #define USE_CAP3
 
 #ifdef INFANTRY
-	#define CAN11
+	//#define CAN11
 	//#define CAN12
 	//#define CAN21
 	//#define CAN22
