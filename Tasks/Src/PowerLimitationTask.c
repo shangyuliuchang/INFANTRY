@@ -12,30 +12,36 @@
   */
 #include "includes.h"
 #include "math.h"
-#define POWER_LIMITATION_DEBUG
+//#define POWER_LIMITATION_DEBUG
 
 void PowerLimitation(void)
 {
 	double kIntensityToMoment=200000.0;
 	double PowerMax=(double)Cap_Get_Aim_Power()*0.7;
 	double rotateSpeedRate=0.0;
-	double PowerSum=CMFL.offical_speedPID.kp*((CMFL.TargetAngle-CMFL.RxMsgC6x0.RotateSpeed)*CMFL.RxMsgC6x0.RotateSpeed+\
-																						(CMFR.TargetAngle-CMFR.RxMsgC6x0.RotateSpeed)*CMFR.RxMsgC6x0.RotateSpeed+\
-																						(CMBL.TargetAngle-CMBL.RxMsgC6x0.RotateSpeed)*CMBL.RxMsgC6x0.RotateSpeed+\
-																						(CMBR.TargetAngle-CMBR.RxMsgC6x0.RotateSpeed)*CMBR.RxMsgC6x0.RotateSpeed)/kIntensityToMoment;
+	double CMFLRotateSpeed=(double)CMFL.RxMsgC6x0.RotateSpeed;
+	double CMFRRotateSpeed=(double)CMFR.RxMsgC6x0.RotateSpeed;
+	double CMBLRotateSpeed=(double)CMBL.RxMsgC6x0.RotateSpeed;
+	double CMBRRotateSpeed=(double)CMBR.RxMsgC6x0.RotateSpeed;
+	double PowerSum=CMFL.offical_speedPID.kp*((CMFL.TargetAngle-CMFLRotateSpeed)*CMFLRotateSpeed+\
+																						(CMFR.TargetAngle-CMFRRotateSpeed)*CMFRRotateSpeed+\
+																						(CMBL.TargetAngle-CMBLRotateSpeed)*CMBLRotateSpeed+\
+																						(CMBR.TargetAngle-CMBRRotateSpeed)*CMBRRotateSpeed)/kIntensityToMoment;
 	
 	#ifdef POWER_LIMITATION_DEBUG
 	PowerMax=30.0;
 	#else
 	if(Cap_Get_Cap_State()==CAP_STATE_RELEASE && Cap_Get_Cap_Voltage()>12.0){
-		PowerMax = INT16_MAX;
+		PowerMax = 10000.0;
 	}
 	#endif
 	if(PowerSum>PowerMax){
-		rotateSpeedRate=1.0-(PowerSum-PowerMax)/(CMFL.offical_speedPID.kp*(CMFL.TargetAngle*CMFL.RxMsgC6x0.RotateSpeed+\
-																																			 CMFR.TargetAngle*CMFR.RxMsgC6x0.RotateSpeed+\
-																																			 CMBL.TargetAngle*CMBL.RxMsgC6x0.RotateSpeed+\
-																																			 CMBR.TargetAngle*CMBR.RxMsgC6x0.RotateSpeed)/kIntensityToMoment);
+		rotateSpeedRate=1.0-(PowerSum-PowerMax)/(CMFL.offical_speedPID.kp*(CMFL.TargetAngle*CMFLRotateSpeed+\
+																																			 CMFR.TargetAngle*CMFRRotateSpeed+\
+																																			 CMBL.TargetAngle*CMBLRotateSpeed+\
+																																			 CMBR.TargetAngle*CMBRRotateSpeed))*kIntensityToMoment;
+		if(rotateSpeedRate>1.0)rotateSpeedRate=1.0;
+		if(rotateSpeedRate<0.0)rotateSpeedRate=0.0;
 		CMFL.TargetAngle*=rotateSpeedRate;
 		CMFR.TargetAngle*=rotateSpeedRate;
 		CMBL.TargetAngle*=rotateSpeedRate;

@@ -102,9 +102,9 @@ float Cap_Get_Aim_Power(void){
 	#ifndef BOARD_SLAVE
 	int power[] = {0,60,80,120};
 	if(JUDGE_State == OFFLINE){
-		return 120;
+		return 60;
 	}else{
-		return power[RefereeData.GameRobotState.robot_level]*0.95+(RefereeData.PowerHeat.chassis_power_buffer-50)*0.05;
+		return power[RefereeData.GameRobotState.robot_level]*0.95+(RefereeData.PowerHeat.chassis_power_buffer-50)*0.1;
 	}
 	#else
 	return RxAimedPower;
@@ -293,7 +293,7 @@ static void Cap_Ctr() { // called with period of 2 ms
 		Cap_State_Switch(CAP_STATE_STOP);
 	}
 	#else
-	if ((RefereeData.GameRobotState.remain_HP < 1 && JUDGE_State==ONLINE) || WorkState == STOP_STATE /*|| WorkState == PREPARE_STATE*/) {
+	if (/*(RefereeData.GameRobotState.remain_HP < 1 && JUDGE_State==ONLINE) || */WorkState == STOP_STATE /*|| WorkState == PREPARE_STATE*/) {
 		Cap_State_Switch(CAP_STATE_STOP);
 	}
 	#endif
