@@ -248,7 +248,9 @@ static void Cap_Ctr_STOP() {
 }
 
 static void Cap_Ctr_RELEASE() {
+	#ifdef USE_EMERGENCY_MODE
 	static int cap_emergency_cnt=0;
+	#endif
 	if(VAL_POWER_Voltage<9)
 	{
 		Cap_State_Switch(CAP_STATE_STOP);
@@ -327,6 +329,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 #ifdef USE_CAP3
 static void LED_Show_SuperCap_Voltage(uint8_t flag)
 {
+	if(Cap_Get_Cap_State()==CAP_STATE_EMERGENCY){
+		HAL_GPIO_WritePin(GPIOG, 0x1fe, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOG, 0x1e0, GPIO_PIN_RESET);
+		return;
+	}
 	if (flag == 0)
 	{
 		HAL_GPIO_WritePin(GPIOG, 0x1fe, GPIO_PIN_SET);
