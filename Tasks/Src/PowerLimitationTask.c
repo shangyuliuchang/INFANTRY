@@ -31,9 +31,11 @@ void PowerLimitation(void)
 	#ifdef POWER_LIMITATION_DEBUG
 	PowerMax=30.0;
 	#else
-	if(Cap_Get_Cap_State()==CAP_STATE_RELEASE && Cap_Get_Cap_Voltage()>12.0){
-		PowerMax = 10000.0;
-	}
+		#ifdef USE_CAP3
+			if(Cap_Get_Cap_State()==CAP_STATE_RELEASE && Cap_Get_Cap_Voltage()>12.0){
+				PowerMax = 10000.0;
+			}
+		#endif
 	#endif
 	if(PowerSum>PowerMax){
 		rotateSpeedRate=1.0-(PowerSum-PowerMax)/(CMFL.offical_speedPID.kp*(CMFL.TargetAngle*CMFLRotateSpeed+\

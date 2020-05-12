@@ -25,7 +25,7 @@
 //关于这些宏定义，可以参考工程文件夹里的那个txt
 //双板通信配置
 //#define DOUBLE_BOARD_CAN1
-//#define DOUBLE_BOARD_CAN2
+#define DOUBLE_BOARD_CAN2
 #if defined (DOUBLE_BOARD_CAN1) || defined (DOUBLE_BOARD_CAN2)
 //#define BOARD_MAIN
 #define BOARD_SLAVE
@@ -35,13 +35,13 @@
 //#define USE_IMU
 //#define USE_CHASSIS_FOLLOW
 #define USE_HEAT_LIMIT
-//#define USE_POWERLIMITATION
+#define USE_POWERLIMITATION
 #define USE_CHASSIS_ADJUST
 //#define USE_GIMBAL_ENCODER
 //#define USE_CAP3
 
 #ifdef INFANTRY
-	#define CAN11
+	//#define CAN11
 	//#define CAN12
 	//#define CAN21
 	//#define CAN22
